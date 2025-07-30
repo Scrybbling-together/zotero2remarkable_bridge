@@ -4,8 +4,8 @@ import getopt
 
 from pyzotero.zotero import Zotero
 from tqdm import tqdm
-from config_functions import *
-from sync_functions import *
+from zotero2remarkable_bridge.config_functions import *
+from zotero2remarkable_bridge.sync_functions import *
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -42,7 +42,8 @@ def pull(zot: Zotero, webdav: bool, read_folder: str):
         logger.info("No files ")
 
 
-def main(argv):
+def main():
+    argv = sys.argv[1:]
     config_path = Path.cwd() / "config.yml"
     if not config_path.exists():
         write_config("config.yml")
@@ -80,4 +81,5 @@ def main(argv):
         logger.exception(e)
         
 
-main(sys.argv[1:])
+if __name__ == "__main__":
+    main()

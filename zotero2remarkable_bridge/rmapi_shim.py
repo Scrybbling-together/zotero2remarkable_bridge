@@ -3,13 +3,15 @@ import os
 import subprocess
 import json
 import logging
+import shutil
 from typing import List
 
 logger = logging.getLogger("zotero_rM_bridge.rmapi")
 
-BASE_DIR = os.path.abspath(os.path.join(__file__, '../'))
-rmapi_location = os.path.join(BASE_DIR, "rmapi")
+rmapi_location = shutil.which("rmapi")
 
+if rmapi_location is None:
+    raise FileNotFoundError("Could not find 'rmapi' on your system PATH.")
 
 
 def check_rmapi():

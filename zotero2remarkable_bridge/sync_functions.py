@@ -7,7 +7,7 @@ import hashlib
 
 from pyzotero.zotero import Zotero
 
-import rmapi_shim as rmapi
+import zotero2remarkable_bridge.rmapi_shim as rmapi
 import remarks
 from pathlib import Path
 from shutil import rmtree
