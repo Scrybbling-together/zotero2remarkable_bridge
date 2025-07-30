@@ -37,7 +37,7 @@ def pull(zot: Zotero, webdav: bool, read_folder: str):
             if webdav:
                 zotero_upload_webdav(pdf_name, zot, webdav)
             else:
-                zotero_upload(pdf_name, zot)
+                attach_pdf_to_zotero_document(pdf_name, zot)
     else:
         logger.info("No files ")
 
