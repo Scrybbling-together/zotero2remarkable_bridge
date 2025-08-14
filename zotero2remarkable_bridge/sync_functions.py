@@ -129,7 +129,7 @@ def attach_pdf_to_zotero_document(pdf_path: Path, zot: Zotero):
     annotated_path = pdf_path.with_name(annotated_name)
     logging.info(f"Have an annotated PDF {str(pdf_path)} to upload")
 
-    pdf_path.rename(str(annotated_path) + ".pdf")
+    pdf_path.rename(str(annotated_path))
 
     for document in zot.items(tag="synced"):
         doc_id = document["key"]
@@ -142,7 +142,17 @@ def attach_pdf_to_zotero_document(pdf_path: Path, zot: Zotero):
             continue
 
         attachments = zot.children(doc_id)
-        matching_attachment = next((att for att in attachments if att.get("data", {}).get("filename") == pdf_path.name), None)
+        matching_attachment = next(
+            (
+                att
+                for att in attachments
+                if (
+                    att.get("data", {}).get("filename") == pdf_path.name
+                    or Path(att.get("data", {}).get("path", "")).name == pdf_path.name
+                )
+            ),
+            None,
+        )
 
         if matching_attachment:
             files_to_upload = [str(annotated_path)]
