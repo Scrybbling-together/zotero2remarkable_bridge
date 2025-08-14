@@ -10,7 +10,7 @@ from pyzotero.zotero import Zotero
 import zotero2remarkable_bridge.rmapi_shim as rmapi
 import remarks
 from pathlib import Path
-from shutil import rmtree
+from shutil import rmtree, copy
 from time import sleep
 from datetime import datetime
 
@@ -25,11 +25,23 @@ def sync_to_rm(item, zot, folders):
     for entry in attachments:
         if "contentType" in entry["data"] and entry["data"]["contentType"] == "application/pdf":
             attachment_id = attachments[attachments.index(entry)]["key"]
-            attachment_name = zot.item(attachment_id)["data"]["filename"]
+            item_data = zot.item(attachment_id)["data"]
+            if item_data["linkMode"] == "linked_file":
+                path = Path(item_data["path"])
+                attachment_name = path.name
+            else:
+                path = None
+                attachment_name = item_data["filename"]
+
             logger.info(f"Processing {attachment_name}...")
 
-            # Get actual file and repack it in reMarkable's file format
-            zot.dump(attachment_id, path=temp_path)
+            if path is None:
+                # Get actual file and repack it in reMarkable's file format
+                zot.dump(attachment_id, path=temp_path)
+            else:
+                logger.info(f"Copying linked file from {path}...")
+                # Copy the linked file from its current location
+                copy(path, temp_path)
             file_name = temp_path / attachment_name
             if file_name:
                 if rmapi.upload_file(file_name, f"/Zotero/{folders['unread']}"):
