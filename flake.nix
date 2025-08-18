@@ -26,7 +26,10 @@
         zot_x_rm = p2n.mkPoetryApplication {
           buildInputs = [pkgs.inkscape];
 
-          projectDir = ./.;
+          projectDir = pkgs.lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type: true;
+          };
           preferWheels = true;
           overrides = p2n.overrides.withDefaults (
             final: prev: {
@@ -45,6 +48,7 @@
           buildInputs = [
             pkgs.rmapi
             pkgs.poetry
+            pkgs.zotero
             zot_x_rm
           ];
         };

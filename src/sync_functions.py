@@ -7,14 +7,15 @@ import hashlib
 
 from pyzotero.zotero import Zotero
 
-import zotero2remarkable_bridge.rmapi_shim as rmapi
+import src.rmapi_shim as rmapi
+from src.filetreeAdapters.AbstractFiletree import AbstractFiletree
 import remarks
 from pathlib import Path
 from shutil import rmtree
 from time import sleep
 from datetime import datetime
 
-logger = logging.getLogger("zotero_rM_bridge.sync_functions")
+logger = logging.getLogger("zotero_rM_bridge:sync_functions")
 
 
 def sync_to_rm(item, zot, folders):
@@ -26,7 +27,7 @@ def sync_to_rm(item, zot, folders):
         if "contentType" in entry["data"] and entry["data"]["contentType"] == "application/pdf":
             attachment_id = attachments[attachments.index(entry)]["key"]
             attachment_name = zot.item(attachment_id)["data"]["filename"]
-            logger.info(f"Processing {attachment_name}...")
+            logger.info(f"Processing `{attachment_name}`")
 
             # Get actual file and repack it in reMarkable's file format
             zot.dump(attachment_id, path=temp_path)
@@ -50,7 +51,7 @@ def sync_to_rm_webdav(item, zot, webdav, folders):
         if "contentType" in entry["data"] and entry["data"]["contentType"] == "application/pdf":
             attachment_id = attachments[attachments.index(entry)]["key"]
             attachment_name = zot.item(attachment_id)["data"]["filename"]
-            logger.info(f"Processing {attachment_name}...")
+            logger.info(f"Processing `{attachment_name}`...")
 
             # Get actual file from webdav, extract it and repack it in reMarkable's file format
             file_name = f"{attachment_id}.zip"
@@ -83,7 +84,7 @@ def sync_to_rm_webdav(item, zot, webdav, folders):
 
 def download_from_rm(entity: str, folder: str) -> Path:
     temp_path = Path(tempfile.gettempdir())
-    logger.info(f"Processing {entity}...")
+    logger.info(f"Processing `{entity}`...")
     zip_name = f"{entity}.rmdoc"
     file_path = temp_path / zip_name
     unzip_path = temp_path / f"{entity}-unzipped"
@@ -97,12 +98,12 @@ def download_from_rm(entity: str, folder: str) -> Path:
         zf.extractall(unzip_path)
 
     remarks.run_remarks(str(unzip_path), temp_path)
-    logging.info("PDF rendered")
+    logger.info("PDF rendered")
     pdf = (temp_path / f"{entity} _remarks.pdf")
     pdf = pdf.rename(pdf.with_stem(f"{entity}"))
     pdf_name = pdf.name
 
-    logging.info("PDF written")
+    logger.info("PDF written")
     file_path.unlink()
     rmtree(unzip_path)
 
@@ -113,9 +114,9 @@ def attach_pdf_to_zotero_document(pdf_path: Path, zot: Zotero):
     md_name = f"{pdf_path.stem} _obsidian.md"
     md_path = pdf_path.with_name(md_name)
 
-    annotated_name = f"(Annotated) {pdf_path.stem}{pdf_path.suffix}"
+    annotated_name = f"{pdf_path.stem}{pdf_path.suffix}"
     annotated_path = pdf_path.with_name(annotated_name)
-    logging.info(f"Have an annotated PDF {str(pdf_path)} to upload")
+    logger.info(f"Have an annotated PDF \"{str(pdf_path.stem)}\" to upload")
 
     pdf_path.rename(str(annotated_path) + ".pdf")
 
@@ -126,11 +127,12 @@ def attach_pdf_to_zotero_document(pdf_path: Path, zot: Zotero):
 
         if any(tag["tag"] == "annotated" for tag in doc_tags):
             # if the attachment was previously updated, skip it
-            logging.info(f"Zotero entry '{doc_name}' is already annotated - skipping upload.")
+            logger.info(f"Zotero entry '{doc_name}' is already annotated - skipping upload.")
             continue
 
         attachments = zot.children(doc_id)
-        matching_attachment = next((att for att in attachments if att.get("data", {}).get("filename") == pdf_path.name), None)
+        matching_attachment = next((att for att in attachments if att.get("data", {}).get("filename") == pdf_path.name),
+                                   None)
 
         if matching_attachment:
             files_to_upload = [str(annotated_path)]
@@ -141,17 +143,17 @@ def attach_pdf_to_zotero_document(pdf_path: Path, zot: Zotero):
             success = upload.get("success")
             unchanged = upload.get("unchanged")
             if success or unchanged:
-                logging.info(f"'{pdf_path}' successfully attached to Zotero entry '{doc_name}'.")
+                logger.info(f"'{pdf_path}' successfully attached to Zotero entry '{doc_name}'.")
                 zot.add_tags(document, "annotated")
                 return
             else:
-                logging.warning(f"Tried uploading '{pdf_path} to Zotero item '{doc_name}, but was unsuccessful'")
-                logging.warning(f"Was the upload successful? {success}")
-                logging.warning(f"Was the upload unchanged? {unchanged}")
+                logger.warning(f"Tried uploading '{pdf_path} to Zotero item '{doc_name}, but was unsuccessful'")
+                logger.warning(f"Was the upload successful? {success}")
+                logger.warning(f"Was the upload unchanged? {unchanged}")
                 return
-        else:
-            logging.warning(
-                f"There's an annotated PDF '{annotated_name}' to upload, but we're unable to find the appropriate item in Zotero")
+
+    logger.warning(
+        f"There's an annotated PDF '{annotated_name}' to upload, but we're unable to find the appropriate item in Zotero")
 
 
 def get_md5(pdf) -> None | str:
@@ -202,7 +204,7 @@ def zotero_upload_webdav(pdf_name, zot, webdav):
                 if create_attachment["success"]:
                     key = create_attachment["success"]["0"]
                 else:
-                    logging.info("Failed to create attachment, aborting...")
+                    logger.info("Failed to create attachment, aborting...")
                     continue
 
                 attachment_zip = temp_path / f"{key}.zip"
@@ -212,9 +214,9 @@ def zotero_upload_webdav(pdf_name, zot, webdav):
 
                 attachment_upload = webdav_uploader(webdav, remote_attachment_zip, attachment_zip)
                 if attachment_upload:
-                    logging.info("Attachment upload successful, proceeding...")
+                    logger.info("Attachment upload successful, proceeding...")
                 else:
-                    logging.error("Failed uploading attachment, skipping...")
+                    logger.error("Failed uploading attachment, skipping...")
                     continue
 
                 """For the file to be properly recognized in Zotero, a propfile needs to be
@@ -228,13 +230,13 @@ def zotero_upload_webdav(pdf_name, zot, webdav):
 
                 propfile_upload = webdav_uploader(webdav, remote_propfile, propfile)
                 if propfile_upload:
-                    logging.info("Propfile upload successful, proceeding...")
+                    logger.info("Propfile upload successful, proceeding...")
                 else:
-                    logging.error("Propfile upload failed, skipping...")
+                    logger.error("Propfile upload failed, skipping...")
                     continue
 
                 zot.add_tags(item, "read")
-                logging.info(f"{pdf_name.name} uploaded to Zotero.")
+                logger.info(f"{pdf_name.name} uploaded to Zotero.")
                 (temp_path / pdf_name).unlink()
                 (temp_path / attachment_zip).unlink()
                 (temp_path / propfile).unlink()
@@ -250,5 +252,106 @@ def get_sync_status(zot):
         for attachment in zot.children(item["key"]):
             if "contentType" in attachment["data"] and attachment["data"]["contentType"] == "application/pdf":
                 read_list.append(attachment["data"]["filename"])
+
+    return read_list
+
+
+# New filetree-based sync functions
+
+def sync_to_rm_filetree(entry, zotero_tree: AbstractFiletree, rm_tree: AbstractFiletree, folders):
+    """Sync an entry's PDF attachments from Zotero to reMarkable"""
+    if not zotero_tree.node_exists(entry):
+        logger.warning(f"No attachments found for item at {entry}")
+        return
+
+    attachments = [attachment for attachment in zotero_tree.list_children(entry) if attachment.endswith(".pdf")]
+    logger.info(f"Syncing {len(attachments)} attachments to reMarkable")
+
+    pdf_name = entry[-1] + ".pdf"
+
+    for attachment in attachments:
+        attachment_path = entry + [attachment]
+
+        logger.info(f"Processing `{attachment}`")
+
+        try:
+            content = zotero_tree.get_file_content(attachment_path)
+            if rm_tree.create_file(["Zotero", folders['unread'], pdf_name], content, "application/pdf"):
+                zotero_tree.add_tags(entry, ["synced"])
+                logger.info(f"Uploaded {attachment} to reMarkable.")
+            else:
+                logger.error(f"Failed to upload {attachment} to reMarkable.")
+        except Exception as e:
+            logger.error(f"Error processing {attachment}: {str(e)}")
+
+
+def attach_remarks_render_to_zotero_entry(file_path: Path, zotero_tree: AbstractFiletree):
+    """Attach annotated PDF back to Zotero using filetree interface."""
+    document_name = file_path.stem.replace(" _remarks", "")
+
+    md_name = f"{document_name} _obsidian.md"
+    md_path = file_path.with_name(md_name)
+
+    logger.info(f"Have an annotated PDF \"{document_name}\" to upload")
+
+    synced_items = zotero_tree.find_nodes_with_tag("synced")
+
+    for attachment_path in synced_items:
+        if not zotero_tree.node_exists(attachment_path):
+            continue
+
+        for attachment_key in zotero_tree.list_children(attachment_path):
+            attachment_filename = attachment_key.replace(".pdf", "")
+
+            if str(file_path.name).replace(attachment_filename, "") == " _remarks.pdf":
+                try:
+                    md_attachment_path = attachment_path + [document_name + ".md"]
+                    if md_path:
+                        with open(md_path, "rb") as f:
+                            md_content = f.read()
+                            if zotero_tree.create_file(md_attachment_path, md_content, "application/markdown"):
+                                zotero_tree.add_tags(md_attachment_path, ["annotated"])
+                                logger.info(f"{file_path} MD successfully attached to Zotero entry '{document_name}'")
+
+                    pdf_attachment_path = attachment_path + [document_name + ".pdf"]
+                    with open(file_path, "rb") as f:
+                        pdf_content = f.read()
+                    if zotero_tree.create_file(pdf_attachment_path, pdf_content, "application/pdf"):
+                        zotero_tree.add_tags(pdf_attachment_path, ["annotated"])
+                        logger.info(f"'{file_path}' PDF successfully attached to Zotero entry '{document_name}'.")
+                        return
+                    else:
+                        logger.warning(f"Failed to create attachment for item at {attachment_path}")
+
+                except Exception as e:
+                    logger.error(f"Error creating attachment: {str(e)}")
+
+    logger.warning(
+        f"There's an annotated PDF '{document_name}' to upload, but we're unable to find the appropriate item in Zotero")
+
+
+def get_sync_status_filetree(zotero_tree: AbstractFiletree):
+    """Get sync status using filetree interface."""
+    read_list = []
+
+    # Find items with "read" tag
+    read_items = zotero_tree.find_nodes_with_tag(["items"], "read")
+
+    for item_path in read_items:
+        # Get attachments for this item
+        attachments_path = item_path + ["attachments"]
+        if not zotero_tree.node_exists(attachments_path):
+            continue
+
+        attachment_keys = zotero_tree.list_children(attachments_path)
+
+        for attachment_key in attachment_keys:
+            attachment_path = attachments_path + [attachment_key]
+            content_type = zotero_tree.get_file_content_type(attachment_path)
+
+            if content_type == "application/pdf":
+                filename = zotero_tree.get_metadata(attachment_path, "filename")
+                if filename:
+                    read_list.append(filename)
 
     return read_list

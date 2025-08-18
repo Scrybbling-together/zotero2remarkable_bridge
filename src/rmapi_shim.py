@@ -6,12 +6,19 @@ import logging
 import shutil
 from typing import List
 
-logger = logging.getLogger("zotero_rM_bridge.rmapi")
+logger = logging.getLogger(__name__)
 
-rmapi_location = shutil.which("rmapi")
+# First try to find rmapi in current working directory
+current_dir = os.getcwd()
+rmapi_path_in_cwd = os.path.join(current_dir, "rmapi")
+if os.path.isfile(rmapi_path_in_cwd) and os.access(rmapi_path_in_cwd, os.X_OK):
+    rmapi_location = rmapi_path_in_cwd
+else:
+    # If not found in cwd, try system PATH
+    rmapi_location = shutil.which("rmapi")
 
 if rmapi_location is None:
-    raise FileNotFoundError("Could not find 'rmapi' on your system PATH.")
+    raise FileNotFoundError("Could not find 'rmapi' in current working directory or on your system PATH.")
 
 
 def check_rmapi():

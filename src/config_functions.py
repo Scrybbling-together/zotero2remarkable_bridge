@@ -5,7 +5,7 @@ import yaml
 from pyzotero import zotero
 from webdav3.client import Client as wdClient
 
-logger = logging.getLogger("zotero_rM_bridge.config")
+logger = logging.getLogger(__name__)
 
 def load_config(config_file):
     with open(config_file, "r") as stream:
