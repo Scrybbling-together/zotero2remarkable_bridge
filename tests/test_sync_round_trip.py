@@ -7,7 +7,7 @@ import logging
 from zrm.config_functions import load_config
 from zrm.filetreeAdapters.ReMarkableAPI import ReMarkableAPI
 from zrm.filetreeAdapters.ZoteroAPI import ZoteroAPI
-from zrm.zoteroRmBridge import zotToRm, rmToZot
+from zrm.zotero_rm_bridge import zotToRm, rmToZot
 
 VALID_RM_DOCUMENT = "tests/on computable numbers - RMPP - highlighter tool v6.rmn"
 
@@ -45,10 +45,8 @@ def test_sync_round_trip_real():
     assert result
 
     rmToZot(zotero=zotero_tree, rm=rm_tree, read_folder="read")
-    # for Claude: replace this with a call to the zot api directly
     children = zotero_tree.list_children(handle)
     assert len(children) == 2
     for child in children:
-        # for Claude: replace this with a call to the rmapi file directly (not the tree, but the rmapi_shim functions)
         assert "annotated" in zotero_tree.get_tags(child.handle)
 

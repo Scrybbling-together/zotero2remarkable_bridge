@@ -15,8 +15,6 @@ webdavclient3 = "^3.14.6"
 pyzotero = "^1.6.11"
 remarks = { git = "https://github.com/Scrybbling-together/remarks", branch = "main" }
 jinja2 = "^3.1.6"
-
-[tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
 
 [build-system]
