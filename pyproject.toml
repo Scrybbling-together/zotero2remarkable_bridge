@@ -1,10 +1,11 @@
 [tool.poetry]
-name = "zotero2remarkable-bridge"
+name = "zoteroRmBridge"
 version = "0.1.0"
 description = "Sync Zotero attachments back-and-forth with your ReMarkable tablet"
 authors = ["Laura Brekelmans <mail@laura.fm>"]
 license = "gplv3"
 readme = "README.md"
+packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -24,4 +25,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-zotero2remarkable-bridge = "zotero2remarkable_bridge.zotero2remarkable_bridge:main"
+zoteroRmBridge = "src.zoteroRmBridge:main"

@@ -24,9 +24,25 @@ if rmapi_location is None:
 def check_rmapi():
     check = subprocess.run([rmapi_location, "ls"], capture_output=True, text=True)
     logger.info(check.stdout)
-    logger.error(check.stderr)
+    if check.stderr:
+        logger.error(check.stderr)
     return check.returncode == 0
 
+
+def get_children(folder: str) -> bool | List[str]:
+    """Get all children in a specific folder."""
+    files = subprocess.run([rmapi_location, "ls", folder], capture_output=True, text=True)
+    logger.info(files.stdout)
+    logger.error(files.stderr)
+    if files.returncode == 0:
+        files_list = files.stdout.split("\n")
+        files_list_new = []
+        for file in files_list:
+            if file[:5] != " Time" and file != "":
+                files_list_new.append(file[4:])
+        return files_list_new
+    else:
+        return False
 
 def get_files(folder: str) -> bool | List[str]:
     # Get all files from a specific folder. Output is sanitized and subfolders are excluded
@@ -35,6 +51,7 @@ def get_files(folder: str) -> bool | List[str]:
     logger.error(files.stderr)
     if files.returncode == 0:
         files_list = files.stdout.split("\n")
+        print(f"Raw output of files in path {folder} is {files_list}")
         files_list_new = []
         for file in files_list:
             if file[:5] != " Time" and file[:3] != "[d]" and file != "":
@@ -71,5 +88,14 @@ def upload_file(file_path, target_folder):
     # Upload a file to its destination folder
     uploader = subprocess.run([rmapi_location, "put", file_path, target_folder], capture_output=True, text=True)
     logger.info(uploader.stdout)
-    logger.error(uploader.stderr)
+    if uploader.stderr:
+        logger.error(uploader.stderr)
     return uploader.returncode == 0
+
+
+def delete_file(path):
+    deleter = subprocess.run([rmapi_location, "rm", path])
+    logger.info(deleter.stdout)
+    if deleter.stderr:
+        logger.error(deleter.stderr)
+    return deleter.returncode == 0

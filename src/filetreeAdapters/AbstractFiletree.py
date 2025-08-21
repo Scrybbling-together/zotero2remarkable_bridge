@@ -2,6 +2,28 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import List, Any, Dict
 
+@dataclass
+class TreeNode:
+    """Base class for all tree nodes"""
+    tags: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    handle: str = field(default_factory=str)
+    type: str = field(default_factory=str)
+    name: str = field(default_factory=str)
+
+
+@dataclass
+class Collection(TreeNode):
+    """Collection node that can contain other nodes"""
+    children: Dict[str, TreeNode] = field(default_factory=dict)
+
+
+@dataclass
+class File(TreeNode):
+    """File node with content"""
+    content: bytes = b""
+    content_type: str = "application/octet-stream"
+
 
 class AbstractFiletree(ABC):
     """Abstract interface for tree structures with collections and files"""
@@ -17,7 +39,7 @@ class AbstractFiletree(ABC):
 
     # Node existence
     @abstractmethod
-    def node_exists(self, path: List[str]) -> bool:
+    def node_exists(self, handle: str) -> bool:
         raise NotImplementedError()
 
     @abstractmethod
@@ -29,7 +51,7 @@ class AbstractFiletree(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def get_file_content(self, path: List[str]) -> bytes:
+    def get_file_content(self, handle: str) -> bytes:
         raise NotImplementedError()
 
     @abstractmethod
@@ -41,15 +63,15 @@ class AbstractFiletree(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def list_children(self, path: List[str]) -> List[str]:
+    def list_children(self, handle: str) -> List[TreeNode]:
         raise NotImplementedError()
 
     @abstractmethod
-    def add_tags(self, path: List[str], tags: List[str]) -> bool:
+    def add_tags(self, handle: str, tags: List[str]) -> bool:
         raise NotImplementedError()
 
     @abstractmethod
-    def remove_tags(self, path: List[str], tags: List[str]) -> bool:
+    def remove_tags(self, handle: str, tags: List[str]) -> bool:
         raise NotImplementedError()
 
     @abstractmethod
@@ -61,7 +83,7 @@ class AbstractFiletree(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def find_nodes_with_tag(self, tag: str) -> List[List[str]]:
+    def find_nodes_with_tag(self, tag: str) -> List[TreeNode]:
         raise NotImplementedError()
 
     @abstractmethod
@@ -81,21 +103,4 @@ class AbstractFiletree(ABC):
         raise NotImplementedError()
 
 
-@dataclass
-class TreeNode:
-    """Base class for all tree nodes"""
-    tags: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
 
-
-@dataclass
-class Collection(TreeNode):
-    """Collection node that can contain other nodes"""
-    children: Dict[str, TreeNode] = field(default_factory=dict)
-
-
-@dataclass
-class File(TreeNode):
-    """File node with content"""
-    content: bytes = b""
-    content_type: str = "application/octet-stream"

@@ -1,9 +1,14 @@
+import logging
+import os
 from typing import List, Any, Dict
 from pathlib import Path
 import tempfile
 
+from filetreeAdapters.AbstractFiletree import TreeNode
 from src.filetreeAdapters.AbstractFiletree import AbstractFiletree
 from src import rmapi_shim as rmapi
+
+logger = logging.getLogger(__name__)
 
 
 class RemarkableFiletreeAdapter(AbstractFiletree):
@@ -39,55 +44,49 @@ class RemarkableFiletreeAdapter(AbstractFiletree):
         except Exception:
             return False
     
-    def create_file(self, path: List[str], content: bytes, content_type: str = "application/octet-stream") -> bool:
+    def create_file(self, path: str, content: bytes, content_type: str = "application/octet-stream") -> bool:
         """Upload a file to reMarkable."""
         try:
             if len(path) < 1:
                 return False
-                
-            filename = path[-1]
-            folder_path = path[:-1]
-            rmapi_folder = self._path_to_rmapi_path(folder_path)
-            
-            # Save content to temporary file
-            with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{filename}") as temp_file:
-                temp_file.write(content)
-                temp_path = temp_file.name
-            
-            try:
-                # Upload using rmapi
-                success = rmapi.upload_file(temp_path, rmapi_folder)
-                return success
-            finally:
-                # Clean up temporary file
-                Path(temp_path).unlink(missing_ok=True)
-                
-        except Exception:
+
+            path = Path(path)
+            filename = path.name
+
+            with tempfile.TemporaryDirectory() as d:
+                with open(str(Path(d) / Path(filename)), "wb") as f:
+                    f.write(content)
+                    f.flush()
+
+                    try:
+                        success = rmapi.upload_file(f.name, str(path.parent))
+                        return success
+                    except Exception as e:
+                        logger.error(e)
+                    finally:
+                        pass
+                        # Path(temp_path).unlink(missing_ok=True)
+
+        except Exception as e:
+            logger.error(e)
             return False
-    
-    def node_exists(self, path: List[str]) -> bool:
+
+    def node_exists(self, path: str) -> bool:
         """Check if a file or folder exists."""
-        try:
-            if not path:
-                return True  # Root always exists
-            
-            rmapi_path = self._path_to_rmapi_path(path)
-            
-            # For files, check if they exist in the parent folder
-            if len(path) >= 1:
-                parent_path = path[:-1]
-                filename = path[-1]
-                
-                parent_rmapi_path = self._path_to_rmapi_path(parent_path)
-                files = rmapi.get_files(parent_rmapi_path)
-                
-                if files:
-                    return filename in files
-                    
-            return False
-        except Exception:
-            return False
-    
+        path = Path(path)
+
+        d = str(path.parent)
+        if not path:
+            # Root always exists
+            return True
+
+        files = rmapi.get_children(d)
+
+        if files:
+            return path.name.replace(".pdf", "") in files
+
+        return False
+
     def is_collection(self, path: List[str]) -> bool:
         """Check if the path represents a folder."""
         try:
@@ -103,25 +102,23 @@ class RemarkableFiletreeAdapter(AbstractFiletree):
         except Exception:
             return False
     
-    def is_file(self, path: List[str]) -> bool:
+    def is_file(self, path: str) -> bool:
         """Check if the path represents a file."""
         if not path:
             return False  # Root is not a file
             
         return self.node_exists(path) and not self.is_collection(path)
     
-    def get_file_content(self, path: List[str]) -> bytes:
+    def get_file_content(self, path: str) -> bytes:
         """Download and return file content."""
         try:
             if not path:
                 raise FileNotFoundError("Cannot get content of root")
 
-            rmapi_path = self._path_to_rmapi_path(path)
-            
             with tempfile.TemporaryDirectory() as temp_dir:
-                success = rmapi.download_file(rmapi_path, temp_dir)
+                success = rmapi.download_file(path, temp_dir)
                 if not success:
-                    raise FileNotFoundError(f"Failed to download file from {rmapi_path}")
+                    raise FileNotFoundError(f"Failed to download file from {path}")
                 
                 # Find the downloaded file
                 temp_path = Path(temp_dir)
@@ -153,19 +150,16 @@ class RemarkableFiletreeAdapter(AbstractFiletree):
         # reMarkable doesn't have direct update, so we re-upload
         return self.create_file(path, content, self.get_file_content_type(path))
     
-    def list_children(self, path: List[str]) -> List[str]:
+    def list_children(self, path: str) -> List[TreeNode]:
         """List files in a folder."""
-        try:
-            rmapi_path = self._path_to_rmapi_path(path)
-            files = rmapi.get_files(rmapi_path)
-            
-            if isinstance(files, list):
-                return files
-            else:
-                return []
-        except Exception:
+        print(f"Checking children in path {path}")
+        files = rmapi.get_files(path)
+
+        if isinstance(files, list):
+            return files
+        else:
             return []
-    
+
     def add_tags(self, path: List[str], tags: List[str]) -> bool:
         """reMarkable doesn't support tags directly."""
         return True  # No-op, but return success
@@ -221,14 +215,9 @@ class RemarkableFiletreeAdapter(AbstractFiletree):
         except Exception:
             return {}
     
-    def delete_node(self, path: List[str]) -> bool:
-        """Delete a file or folder. Note: rmapi has limited delete support."""
-        try:
-            if not path:
-                return False  # Cannot delete root
-                
-            # rmapi doesn't have a direct delete command in the current implementation
-            # This would need to be implemented in rmapi_shim if delete functionality is needed
+    def delete_node(self, path: str) -> bool:
+        """Delete a file or folder."""
+        if not path:
             return False
-        except Exception:
-            return False
+
+        return rmapi.delete_file(path)

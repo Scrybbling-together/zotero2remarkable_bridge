@@ -1,9 +1,12 @@
+import os
+import sys
 import tempfile
 from pathlib import Path
 from typing import List, Any, Dict, Optional
 
 from pyzotero.zotero import Zotero
 
+from filetreeAdapters.AbstractFiletree import TreeNode
 from src.filetreeAdapters.AbstractFiletree import AbstractFiletree
 
 
@@ -20,12 +23,12 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
     - Collections: ["collections"]
     - Specific collection: ["collections", collection_key]
     """
-    
+
     def __init__(self, zotero_client: Zotero):
         self.zot = zotero_client
         self._item_cache = {}
         self._collection_cache = {}
-    
+
     def _get_item_by_key(self, key: str) -> Optional[Dict]:
         """Get item by key with caching."""
         if key not in self._item_cache:
@@ -34,7 +37,7 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
             except Exception:
                 return None
         return self._item_cache[key]
-    
+
     def _get_collection_by_key(self, key: str) -> Optional[Dict]:
         """Get collection by key with caching."""
         if key not in self._collection_cache:
@@ -43,7 +46,7 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
             except Exception:
                 return None
         return self._collection_cache[key]
-    
+
     def _invalidate_cache(self, item_key: str = None):
         """Invalidate cache for specific item or all items."""
         if item_key:
@@ -51,92 +54,55 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
         else:
             self._item_cache.clear()
             self._collection_cache.clear()
-    
-    def create_collection(self, path: List[str]) -> bool:
-        """Create a new collection in Zotero."""
-        try:
-            if len(path) == 2 and path[0] == "collections":
-                collection_name = path[1]
-                payload = [{"name": collection_name}]
-                result = self.zot.create_collection(payload)
-                self._invalidate_cache()
-                return result.get("success", {}) != {}
-            return False
-        except Exception:
-            return False
-    
-    def create_file(self, path: List[str], content: bytes, content_type: str = "application/octet-stream") -> bool:
-        """Create a file attachment in Zotero."""
-        try:
-            if len(path) == 4 and path[0] == "items" and path[2] == "attachments":
-                parent_key = path[1]
-                filename = path[3]
-                
-                # Save content to temporary file
-                with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{filename}") as temp_file:
-                    temp_file.write(content)
-                    temp_path = temp_file.name
-                
+
+    def create_collection(self, path: List[str]) -> str:
+        """Note, Zotero itself has a concept of "collections", by "collection" in the abstract tree
+        The abstract file tree considers a folder or directory or anything else that can hold multiple other files or folders
+        a "collection".
+
+        Entries in a zotero library are modelled as "collections" in this API
+        """
+        # Create standalone item
+        item_template = self.zot.item_template("document")
+        item_template["title"] = path[0]
+        result = self.zot.create_items([item_template])
+        self._invalidate_cache()
+        return result['successful']['0']['key']
+
+    def create_file(self, handle: str, filename: str, content: bytes,
+                    content_type: str = "application/octet-stream") -> str:
+        """Create a file attachment"""
+        with tempfile.TemporaryDirectory() as d:
+            temp_path = str((Path(d) / Path(filename)).absolute())
+            with open(temp_path, "wb") as f:
+                f.write(content)
+                f.flush()
+
                 try:
                     # Create attachment using Zotero API
-                    result = self.zot.attachment_simple([temp_path], parent_key)
-                    success = result.get("success", {}) != {}
-                    if success:
-                        self._invalidate_cache(parent_key)
-                    return success
+                    result = self.zot.attachment_simple([temp_path], handle)
+                    if len(result['success']):
+                        key_ = result['success'][0]['key']
+                        self._invalidate_cache(handle)
+                        return key_
+                    elif len(result['unchanged']):
+                        key_ = result['unchanged'][0]['key']
+                        self._invalidate_cache(handle)
+                        return key_
                 finally:
                     # Clean up temporary file
                     Path(temp_path).unlink(missing_ok=True)
-            
-            elif len(path) == 2 and path[0] == "items":
-                # Create standalone item
-                item_template = self.zot.item_template("document")
-                item_template["title"] = path[1]
-                result = self.zot.create_items([item_template])
-                self._invalidate_cache()
-                return result.get("success", {}) != {}
-            
-            return False
-        except Exception:
-            return False
-    
-    def node_exists(self, path: List[str]) -> bool:
+
+    def node_exists(self, handle: str) -> bool:
         """Check if a node exists at the given path."""
-        try:
-            if not path:
-                return True  # Root always exists
-            
-            if path[0] == "items":
-                if len(path) == 1:
-                    return True  # Items container always exists
-                elif len(path) == 2:
-                    return self._get_item_by_key(path[1]) is not None
-                elif len(path) == 3 and path[2] == "attachments":
-                    item = self._get_item_by_key(path[1])
-                    return item is not None
-                elif len(path) == 4 and path[2] == "attachments":
-                    parent_item = self._get_item_by_key(path[1])
-                    if parent_item is None:
-                        return False
-                    attachments = self.zot.children(path[1])
-                    return any(att["key"] == path[3] for att in attachments)
-            
-            elif path[0] == "collections":
-                if len(path) == 1:
-                    return True  # Collections container always exists
-                elif len(path) == 2:
-                    return self._get_collection_by_key(path[1]) is not None
-            
-            return False
-        except Exception:
-            return False
-    
+        return self._get_item_by_key(handle) is not None
+
     def is_collection(self, path: List[str]) -> bool:
         """Check if the node is a collection (container)."""
         try:
             if not path:
                 return True  # Root is a collection
-            
+
             if path[0] == "items":
                 if len(path) == 1:
                     return True  # Items container
@@ -146,17 +112,17 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
                 elif len(path) == 3 and path[2] == "attachments":
                     return True  # Attachments container
                 return False
-            
+
             elif path[0] == "collections":
                 if len(path) == 1:
                     return True  # Collections container
                 elif len(path) == 2:
                     return self._get_collection_by_key(path[1]) is not None
-            
+
             return False
         except Exception:
             return False
-    
+
     def is_file(self, path: List[str]) -> bool:
         """Check if the node is a file."""
         try:
@@ -170,24 +136,19 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
             return False
         except Exception:
             return False
-    
-    def get_file_content(self, path: List[str]) -> bytes:
+
+    def get_file_content(self, handle: str) -> bytes:
         """Get the content of a file attachment."""
-        try:
-            if len(path) == 4 and path[0] == "items" and path[2] == "attachments":
-                attachment_key = path[3]
-                with tempfile.TemporaryDirectory() as temp_dir:
-                    self.zot.dump(attachment_key, path=temp_dir)
-                    # Find the downloaded file
-                    temp_path = Path(temp_dir)
-                    files = list(temp_path.glob("*"))
-                    if files:
-                        with open(files[0], "rb") as f:
-                            return f.read()
-            raise FileNotFoundError(f"File not found at path: {path}")
-        except Exception as e:
-            raise FileNotFoundError(f"Could not retrieve file content: {str(e)}")
-    
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            self.zot.dump(handle, path=temp_dir)
+            # Find the downloaded file
+            temp_path = Path(temp_dir)
+            files = list(temp_path.glob("*"))
+            if files:
+                with open(files[0], "rb") as f:
+                    return f.read()
+
     def get_file_content_type(self, path: List[str]) -> str:
         """Get the content type of a file attachment."""
         try:
@@ -201,138 +162,65 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
             return "application/octet-stream"
         except Exception:
             return "application/octet-stream"
-    
-    def update_file_content(self, path: List[str], content: bytes) -> bool:
+
+    def update_file_content(self, parent_handle: str, attachment_handle: str, content: bytes) -> bool:
         """Update the content of an existing file attachment."""
-        try:
-            if len(path) == 4 and path[0] == "items" and path[2] == "attachments":
-                parent_key = path[1]
-                attachment_key = path[3]
-                
-                # Get the original filename
-                attachments = self.zot.children(parent_key)
-                attachment = next((att for att in attachments if att["key"] == attachment_key), None)
-                if not attachment:
-                    return False
-                
-                filename = attachment.get("data", {}).get("filename", "updated_file")
-                
-                # Save new content to temporary file
-                with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{filename}") as temp_file:
-                    temp_file.write(content)
-                    temp_path = temp_file.name
-                
-                try:
-                    # Delete old attachment and create new one
-                    self.zot.delete_item(attachment)
-                    result = self.zot.attachment_simple([temp_path], parent_key)
-                    success = result.get("success", {}) != {}
-                    if success:
-                        self._invalidate_cache(parent_key)
-                    return success
-                finally:
-                    Path(temp_path).unlink(missing_ok=True)
-            
-            return False
-        except Exception:
-            return False
-    
-    def list_children(self, path: List[str]) -> List[str]:
+        old_attachment = self._get_item_by_key(attachment_handle)
+        name = old_attachment['data']['title']
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, name), "wb") as f:
+                f.write(content)
+                self.zot.delete_item(old_attachment)
+                new_attachment = self.zot.attachment_simple([f.name], parent_handle)
+                return new_attachment['success'][0]['key']
+
+    def list_children(self, handle: str) -> List[TreeNode]:
         """List the children of a collection node."""
-        try:
-            if not path:
-                # Root level: return top-level containers
-                return ["items", "collections"]
-            
-            if path[0] == "items":
-                if len(path) == 1:
-                    # List all items
-                    items = self.zot.items()
-                    return [item["key"] for item in items if item.get("data", {}).get("itemType") != "attachment"]
-                elif len(path) == 2:
-                    # This is an item, no children (items don't contain other items directly)
-                    return []
-                elif len(path) == 3 and path[2] == "attachments":
-                    # List attachments for an item
-                    item_key = path[1]
-                    attachments = self.zot.children(item_key)
-                    return [att["key"] for att in attachments if att.get("data", {}).get("itemType") == "attachment"]
-            
-            elif path[0] == "collections":
-                if len(path) == 1:
-                    # List all collections
-                    collections = self.zot.collections()
-                    return [coll["key"] for coll in collections]
-                elif len(path) == 2:
-                    # List items in a specific collection
-                    collection_key = path[1]
-                    items = self.zot.collection_items(collection_key)
-                    return [item["key"] for item in items]
-            
-            return []
-        except Exception:
-            return []
-    
-    def add_tags(self, path: List[str], tags: List[str]) -> bool:
+        children = self.zot.children(handle)
+        return [TreeNode(handle=child['key'], name=child['data']['title'], type=child['data']['itemType'],
+                         tags=child['data']['tags']) for child in children]
+
+    def add_tags(self, handle: str, tags: List[str]) -> bool:
         """Add tags to an item."""
-        try:
-            if len(path) == 2 and path[0] == "items":
-                item_key = path[1]
-                item = self._get_item_by_key(item_key)
-                if item:
-                    self.zot.add_tags(item, *tags)
-                    self._invalidate_cache(item_key)
-                    return True
-            return False
-        except Exception:
-            return False
-    
-    def remove_tags(self, path: List[str], tags: List[str]) -> bool:
+        item = self._get_item_by_key(handle)
+        self.zot.add_tags(item, *tags)
+        self._invalidate_cache(handle)
+        return True
+
+    def remove_tags(self, handle: str, tags: List[str]) -> bool:
         """Remove tags from an item."""
-        try:
-            if len(path) == 2 and path[0] == "items":
-                item_key = path[1]
-                item = self._get_item_by_key(item_key)
-                if item:
-                    current_tags = item.get("data", {}).get("tags", [])
-                    new_tags = [tag for tag in current_tags if tag.get("tag") not in tags]
-                    item["data"]["tags"] = new_tags
-                    self.zot.update_item(item)
-                    self._invalidate_cache(item_key)
-                    return True
-            return False
-        except Exception:
-            return False
-    
-    def get_tags(self, path: List[str]) -> List[str]:
+        item = self._get_item_by_key(handle)
+        if item:
+            current_tags = item.get("data", {}).get("tags", [])
+            new_tags = [tag for tag in current_tags if tag.get("tag") not in tags]
+            item["data"]["tags"] = new_tags
+            self.zot.update_item(item)
+            self._invalidate_cache(handle)
+            return True
+        return False
+
+    def get_tags(self, handle: str) -> List[str]:
         """Get all tags for an item."""
-        try:
-            if len(path) == 2 and path[0] == "items":
-                item_key = path[1]
-                item = self._get_item_by_key(item_key)
-                if item:
-                    tags = item.get("data", {}).get("tags", [])
-                    return [tag.get("tag", "") for tag in tags if tag.get("tag")]
-            return []
-        except Exception:
-            return []
-    
-    def has_tags(self, path: List[str], tags: List[str]) -> bool:
+        item = self._get_item_by_key(handle)
+        if item:
+            tags = item.get("data", {}).get("tags", [])
+            return [tag.get("tag", "") for tag in tags if tag.get("tag")]
+        return []
+
+    def has_tags(self, handle: str, tags: List[str]) -> bool:
         """Check if an item has all specified tags."""
         try:
-            current_tags = self.get_tags(path)
+            current_tags = self.get_tags(handle)
             return all(tag in current_tags for tag in tags)
         except Exception:
             return False
-    
-    def find_nodes_with_tag(self, tag: str) -> List[List[str]]:
+
+    def find_nodes_with_tag(self, tag: str) -> List[TreeNode]:
         """Find all items with a specific tag."""
-        try:
-            items = self.zot.items(tag="items")
-            return [["items", item["key"]] for item in items]
-        except Exception:
-            return []
-    
+        items = self.zot.items(tag=tag)
+        return [TreeNode(tags=item['data']['tags'], handle=item['key'], metadata=item, name=item['data']['title'],
+            type=item['data']['itemType']) for item in items]
+
     def set_metadata(self, path: List[str], key: str, value: Any) -> bool:
         """Set metadata for an item."""
         try:
@@ -349,7 +237,7 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
             return False
         except Exception:
             return False
-    
+
     def get_metadata(self, path: List[str], key: str) -> Any:
         """Get metadata for an item."""
         try:
@@ -369,7 +257,7 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
             return None
         except Exception:
             return None
-    
+
     def get_all_metadata(self, path: List[str]) -> Dict[str, Any]:
         """Get all metadata for an item."""
         try:
@@ -389,7 +277,7 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
             return {}
         except Exception:
             return {}
-    
+
     def delete_node(self, path: List[str]) -> bool:
         """Delete a node (item, attachment, or collection)."""
         try:
@@ -401,7 +289,7 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
                     self.zot.delete_item(item)
                     self._invalidate_cache(item_key)
                     return True
-            
+
             elif len(path) == 4 and path[0] == "items" and path[2] == "attachments":
                 # Delete an attachment
                 parent_key = path[1]
@@ -412,7 +300,7 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
                     self.zot.delete_item(attachment)
                     self._invalidate_cache(parent_key)
                     return True
-            
+
             elif len(path) == 2 and path[0] == "collections":
                 # Delete a collection
                 collection_key = path[1]
@@ -421,7 +309,7 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
                     self.zot.delete_collection(collection)
                     self._invalidate_cache()
                     return True
-            
+
             return False
         except Exception:
             return False
