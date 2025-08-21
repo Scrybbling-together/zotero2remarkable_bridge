@@ -40,7 +40,7 @@ def test_sync_round_trip_real():
     # In a real scenario, someone would make some annotations on-device for the newly created file
     # Afterward, when done annotating, they move it to the read folder
     # these two operations mimic an "mv" from unread to read
-    assert rm_tree.delete_node("Zotero/unread/" + paper_name)
+    assert rm_tree.delete_file_or_folder("Zotero/unread/" + paper_name)
     result = rm_tree.create_file("Zotero/read/" + paper_name + ".pdf", pdf_content, "application/pdf")
     assert result
 

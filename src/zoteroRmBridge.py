@@ -4,8 +4,6 @@ import getopt
 
 from tqdm import tqdm
 from config_functions import *
-from src.filetreeAdapters.ReMarkableAPI import ReMarkableAPI
-from src.filetreeAdapters.ZoteroAPI import ZoteroAPI
 from sync_functions import *
 import logging.config
 
@@ -100,7 +98,6 @@ def main():
                     logger.error("Invalid argument")
                     sys.exit()
     except Exception as e:
-        print(e)
         logger.exception(e)
 
 

@@ -8,7 +8,7 @@ from pyzotero.zotero import Zotero
 from src.filetreeAdapters.AbstractFiletree import TreeNode
 
 
-class ZoteroAPI():
+class ZoteroAPI:
     def __init__(self, zotero_client: Zotero):
         self.zot = zotero_client
         self._item_cache = {}
@@ -76,7 +76,7 @@ class ZoteroAPI():
         """Check if a node exists at the given path."""
         return self._get_item_by_key(handle) is not None
 
-    def get_file_content(self, handle: str) -> bytes:
+    def get_file_content(self, handle: str) -> bytes | None:
         """Get the content of a file attachment."""
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -87,6 +87,7 @@ class ZoteroAPI():
             if files:
                 with open(files[0], "rb") as f:
                     return f.read()
+            return None
 
     def update_file_content(self, parent_handle: str, attachment_handle: str, content: bytes) -> bool:
         """Update the content of an existing file attachment."""
