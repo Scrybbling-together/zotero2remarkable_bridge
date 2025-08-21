@@ -1,29 +1,14 @@
 import os
-import sys
 import tempfile
 from pathlib import Path
 from typing import List, Any, Dict, Optional
 
 from pyzotero.zotero import Zotero
 
-from filetreeAdapters.AbstractFiletree import TreeNode
-from src.filetreeAdapters.AbstractFiletree import AbstractFiletree
+from src.filetreeAdapters.AbstractFiletree import TreeNode
 
 
-class ZoteroFiletreeAdapter(AbstractFiletree):
-    """
-    Adapter that implements AbstractFiletree interface for Zotero API.
-    
-    Path convention:
-    - Root: []
-    - Library items: ["items"]
-    - Specific item: ["items", item_key]
-    - Item attachments: ["items", item_key, "attachments"]
-    - Specific attachment: ["items", item_key, "attachments", attachment_key]
-    - Collections: ["collections"]
-    - Specific collection: ["collections", collection_key]
-    """
-
+class ZoteroAPI():
     def __init__(self, zotero_client: Zotero):
         self.zot = zotero_client
         self._item_cache = {}
@@ -32,19 +17,13 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
     def _get_item_by_key(self, key: str) -> Optional[Dict]:
         """Get item by key with caching."""
         if key not in self._item_cache:
-            try:
-                self._item_cache[key] = self.zot.item(key)
-            except Exception:
-                return None
+            self._item_cache[key] = self.zot.item(key)
         return self._item_cache[key]
 
     def _get_collection_by_key(self, key: str) -> Optional[Dict]:
         """Get collection by key with caching."""
         if key not in self._collection_cache:
-            try:
-                self._collection_cache[key] = self.zot.collection(key)
-            except Exception:
-                return None
+            self._collection_cache[key] = self.zot.collection(key)
         return self._collection_cache[key]
 
     def _invalidate_cache(self, item_key: str = None):
@@ -97,46 +76,6 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
         """Check if a node exists at the given path."""
         return self._get_item_by_key(handle) is not None
 
-    def is_collection(self, path: List[str]) -> bool:
-        """Check if the node is a collection (container)."""
-        try:
-            if not path:
-                return True  # Root is a collection
-
-            if path[0] == "items":
-                if len(path) == 1:
-                    return True  # Items container
-                elif len(path) == 2:
-                    item = self._get_item_by_key(path[1])
-                    return item is not None and item.get("data", {}).get("itemType") != "attachment"
-                elif len(path) == 3 and path[2] == "attachments":
-                    return True  # Attachments container
-                return False
-
-            elif path[0] == "collections":
-                if len(path) == 1:
-                    return True  # Collections container
-                elif len(path) == 2:
-                    return self._get_collection_by_key(path[1]) is not None
-
-            return False
-        except Exception:
-            return False
-
-    def is_file(self, path: List[str]) -> bool:
-        """Check if the node is a file."""
-        try:
-            if len(path) == 4 and path[0] == "items" and path[2] == "attachments":
-                parent_item = self._get_item_by_key(path[1])
-                if parent_item is None:
-                    return False
-                attachments = self.zot.children(path[1])
-                attachment = next((att for att in attachments if att["key"] == path[3]), None)
-                return attachment is not None and attachment.get("data", {}).get("itemType") == "attachment"
-            return False
-        except Exception:
-            return False
-
     def get_file_content(self, handle: str) -> bytes:
         """Get the content of a file attachment."""
 
@@ -149,20 +88,6 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
                 with open(files[0], "rb") as f:
                     return f.read()
 
-    def get_file_content_type(self, path: List[str]) -> str:
-        """Get the content type of a file attachment."""
-        try:
-            if len(path) == 4 and path[0] == "items" and path[2] == "attachments":
-                parent_key = path[1]
-                attachment_key = path[3]
-                attachments = self.zot.children(parent_key)
-                attachment = next((att for att in attachments if att["key"] == attachment_key), None)
-                if attachment:
-                    return attachment.get("data", {}).get("contentType", "application/octet-stream")
-            return "application/octet-stream"
-        except Exception:
-            return "application/octet-stream"
-
     def update_file_content(self, parent_handle: str, attachment_handle: str, content: bytes) -> bool:
         """Update the content of an existing file attachment."""
         old_attachment = self._get_item_by_key(attachment_handle)
@@ -172,6 +97,7 @@ class ZoteroFiletreeAdapter(AbstractFiletree):
                 f.write(content)
                 self.zot.delete_item(old_attachment)
                 new_attachment = self.zot.attachment_simple([f.name], parent_handle)
+                self._invalidate_cache(old_attachment['data']['key'])
                 return new_attachment['success'][0]['key']
 
     def list_children(self, handle: str) -> List[TreeNode]:

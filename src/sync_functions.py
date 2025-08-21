@@ -8,14 +8,16 @@ import hashlib
 from pyzotero.zotero import Zotero
 
 import src.rmapi_shim as rmapi
-from src.filetreeAdapters.AbstractFiletree import AbstractFiletree
 import remarks
 from pathlib import Path
 from shutil import rmtree
 from time import sleep
 from datetime import datetime
 
-logger = logging.getLogger("zotero_rM_bridge:sync_functions")
+from src.filetreeAdapters.ReMarkableAPI import ReMarkableAPI
+from src.filetreeAdapters.ZoteroAPI import ZoteroAPI
+
+logger = logging.getLogger("zotero_rM_bridge.sync_functions")
 
 
 def sync_to_rm(item, zot, folders):
@@ -256,7 +258,7 @@ def get_sync_status(zot):
     return read_list
 
 
-def sync_to_rm_filetree(handle: str, zotero_tree: AbstractFiletree, rm_tree: AbstractFiletree, folders):
+def sync_to_rm_filetree(handle: str, zotero_tree: ZoteroAPI, rm_tree: ReMarkableAPI, folders):
     """Sync an entry's PDF attachments from Zotero to reMarkable"""
     if not zotero_tree.node_exists(handle):
         logger.warning(f"No attachments found for item at {handle}")
@@ -281,7 +283,7 @@ def sync_to_rm_filetree(handle: str, zotero_tree: AbstractFiletree, rm_tree: Abs
             logger.error(f"Error processing {attachment}: {str(e)}")
 
 
-def attach_remarks_render_to_zotero_entry(rendered_remarks_pdf: Path, zotero_tree: AbstractFiletree):
+def attach_remarks_render_to_zotero_entry(rendered_remarks_pdf: Path, zotero_tree: ZoteroAPI):
     """Attach annotated PDF back to Zotero using filetree interface."""
     print(f"Path that is passed to the zot fn is {rendered_remarks_pdf}")
     document_name = rendered_remarks_pdf.stem.replace(" _remarks", "")
@@ -339,30 +341,3 @@ def attach_remarks_render_to_zotero_entry(rendered_remarks_pdf: Path, zotero_tre
 
     logger.warning(
         f"There's an annotated PDF '{document_name}' to upload, but we're unable to find the appropriate item in Zotero")
-
-
-def get_sync_status_filetree(zotero_tree: AbstractFiletree):
-    """Get sync status using filetree interface."""
-    read_list = []
-
-    # Find items with "read" tag
-    read_items = zotero_tree.find_nodes_with_tag(["items"], "read")
-
-    for item_path in read_items:
-        # Get attachments for this item
-        attachments_path = item_path + ["attachments"]
-        if not zotero_tree.node_exists(attachments_path):
-            continue
-
-        attachment_keys = zotero_tree.list_children(attachments_path)
-
-        for attachment_key in attachment_keys:
-            attachment_path = attachments_path + [attachment_key]
-            content_type = zotero_tree.get_file_content_type(attachment_path)
-
-            if content_type == "application/pdf":
-                filename = zotero_tree.get_metadata(attachment_path, "filename")
-                if filename:
-                    read_list.append(filename)
-
-    return read_list

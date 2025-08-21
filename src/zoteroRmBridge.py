@@ -4,16 +4,16 @@ import getopt
 
 from tqdm import tqdm
 from config_functions import *
+from src.filetreeAdapters.ReMarkableAPI import ReMarkableAPI
+from src.filetreeAdapters.ZoteroAPI import ZoteroAPI
 from sync_functions import *
-from src.filetreeAdapters.ZoteroFiletreeAdapter import ZoteroFiletreeAdapter
-from src.filetreeAdapters.RemarkableFiletreeAdapter import RemarkableFiletreeAdapter
 import logging.config
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(), logging.FileHandler(filename="sync.log")])
 
 
-def zotToRm(zotero: AbstractFiletree, rm: AbstractFiletree, folders):
+def zotToRm(zotero: ZoteroAPI, rm: ReMarkableAPI, folders):
     """Push files from Zotero to reMarkable using filetree interface."""
     logger.info("Syncing from Zotero to reMarkable")
     
@@ -30,7 +30,7 @@ def zotToRm(zotero: AbstractFiletree, rm: AbstractFiletree, folders):
         logger.info("Nothing to sync from Zotero")
 
 
-def rmToZot(zotero: AbstractFiletree, rm: AbstractFiletree, read_folder: str):
+def rmToZot(zotero: ZoteroAPI, rm: ReMarkableAPI, read_folder: str):
     """Pull files from reMarkable to Zotero using filetree interface."""
     logger.info("Syncing from reMarkable to Zotero")
     rm_folder_path = os.path.join("Zotero", read_folder)
@@ -70,8 +70,8 @@ def main():
 
     # Initialize filetree adapters
     try:
-        zotero_tree = ZoteroFiletreeAdapter(zot)
-        rm_tree = RemarkableFiletreeAdapter()
+        zotero_tree = ZoteroAPI(zot)
+        rm_tree = ReMarkableAPI()
         logger.info("Filetree adapters initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize filetree adapters: {e}")

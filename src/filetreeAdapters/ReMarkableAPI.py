@@ -5,23 +5,12 @@ from pathlib import Path
 import tempfile
 
 from filetreeAdapters.AbstractFiletree import TreeNode
-from src.filetreeAdapters.AbstractFiletree import AbstractFiletree
 from src import rmapi_shim as rmapi
 
 logger = logging.getLogger(__name__)
 
 
-class RemarkableFiletreeAdapter(AbstractFiletree):
-    """
-    Adapter that implements AbstractFiletree interface for reMarkable via rmapi.
-    
-    Path convention:
-    - Root: []
-    - Folder: ["folder_name"] 
-    - Nested folder: ["folder_name", "subfolder"]
-    - File: ["folder_name", "file_name"]
-    """
-    
+class ReMarkableAPI:
     def __init__(self):
         # Verify rmapi is working
         if not rmapi.check_rmapi():
