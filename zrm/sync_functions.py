@@ -7,15 +7,15 @@ import hashlib
 
 from pyzotero.zotero import Zotero
 
-import src.rmapi_shim as rmapi
+import zrm.rmapi_shim as rmapi
 import remarks
 from pathlib import Path
 from shutil import rmtree
 from time import sleep
 from datetime import datetime
 
-from src.filetreeAdapters.ReMarkableAPI import ReMarkableAPI
-from src.filetreeAdapters.ZoteroAPI import ZoteroAPI
+from zrm.filetreeAdapters.ReMarkableAPI import ReMarkableAPI
+from zrm.filetreeAdapters.ZoteroAPI import ZoteroAPI
 
 logger = logging.getLogger("zotero_rM_bridge.sync_functions")
 

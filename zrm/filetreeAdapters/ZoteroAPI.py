@@ -5,7 +5,7 @@ from typing import List, Any, Dict, Optional
 
 from pyzotero.zotero import Zotero
 
-from src.filetreeAdapters.AbstractFiletree import TreeNode
+from zrm.filetreeAdapters.AbstractFiletree import TreeNode
 
 
 class ZoteroAPI:

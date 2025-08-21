@@ -1,11 +1,18 @@
 #!/usr/bin/python3
+import os
 import sys
 import getopt
+import tempfile
+from pathlib import Path
 
+from remarks import remarks
 from tqdm import tqdm
-from config_functions import *
-from sync_functions import *
 import logging.config
+
+from zrm.config_functions import write_config, load_config
+from zrm.filetreeAdapters.ReMarkableAPI import ReMarkableAPI
+from zrm.filetreeAdapters.ZoteroAPI import ZoteroAPI
+from zrm.sync_functions import sync_to_rm_filetree, attach_remarks_render_to_zotero_entry
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(), logging.FileHandler(filename="sync.log")])

@@ -3,7 +3,7 @@ from typing import List
 from pathlib import Path
 import tempfile
 
-from src import rmapi_shim as rmapi
+from zrm import rmapi_shim as rmapi
 
 logger = logging.getLogger(__name__)
 

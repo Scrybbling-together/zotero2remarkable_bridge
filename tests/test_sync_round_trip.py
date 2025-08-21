@@ -4,10 +4,10 @@ Tests for sync round trip functionality using mock filetrees.
 import logging
 
 
-from src.config_functions import load_config
-from src.filetreeAdapters.ReMarkableAPI import ReMarkableAPI
-from src.filetreeAdapters.ZoteroAPI import ZoteroAPI
-from src.zoteroRmBridge import zotToRm, rmToZot
+from zrm.config_functions import load_config
+from zrm.filetreeAdapters.ReMarkableAPI import ReMarkableAPI
+from zrm.filetreeAdapters.ZoteroAPI import ZoteroAPI
+from zrm.zoteroRmBridge import zotToRm, rmToZot
 
 VALID_RM_DOCUMENT = "tests/on computable numbers - RMPP - highlighter tool v6.rmn"
 
