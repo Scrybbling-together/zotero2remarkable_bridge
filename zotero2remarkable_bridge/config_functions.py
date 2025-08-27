@@ -30,7 +30,8 @@ def load_config(config_file):
 
 def write_config(file_name):
     config_data = {}
-    input("Couldn't find config file. Let's create one! Press Enter to continue...")
+    input("Couldn't find config file. Let's create one! Press Enter to continue...\n")
+    print("On your ReMarkable you should have created a folder called Zotero in the root directory.\nIn the following specify ONLY the names of the subfolders, e. g 'read' instead of 'zotero/read'.\n")
     config_data["UNREAD_FOLDER"] = input("Which ReMarkable folder should files be synced to? ")
     config_data["READ_FOLDER"] = input("Which ReMarkable folder should files be synced from? ")
     print("You can find your library ID on this page")
@@ -44,6 +45,11 @@ def write_config(file_name):
         config_data["WEBDAV_HOSTNAME"] = input("Enter path to WebDAV folder (same as in Zotero config): ")
         config_data["WEBDAV_USER"] = input("Enter WebDAV username: ")
         config_data["WEBDAV_PWD"] = input("Enter WebDAV password (consider creating an app token as password is safed in clear text): ")
+    else:
+        config_data["WEBDAV_HOSTNAME"] = "# Only relevant if USE_WEBDAV == True"
+        config_data["WEBDAV_USER"] = "# Only relevant if USE_WEBDAV == True"
+        config_data["WEBDAV_PWD"] = "# Only relevant if USE_WEBDAV == True"
+
 
     with open(file_name, "w") as file:
         yaml.dump(config_data, file)
