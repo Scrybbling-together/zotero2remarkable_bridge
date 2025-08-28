@@ -260,3 +260,41 @@ def test_duplicate_file_overwrites(caplog):
     
     # Verify upload success was logged (overwrite is transparent)
     assert any("Uploaded" in record.message and "duplicate_test.pdf" in record.message and "to reMarkable" in record.message for record in caplog.records if record.levelname == "INFO")
+
+
+@pytest.mark.mock
+def test_rmToZot_updates_existing_markdown_attachment():
+    """Test that rmToZot updates existing markdown attachment when PDF already exists."""
+    mock_zotero = MockZoteroAPI()
+    mock_rm = MockReMarkableAPI(files={}, folders={"", "Zotero", "Zotero/unread", "Zotero/read"})
+    
+    paper_name = "On computable numbers"
+    
+    # Create item in Zotero with synced tag
+    handle = mock_zotero.create_item([paper_name])
+    mock_zotero.add_tags(handle, ["synced"])
+    
+    # Create existing PDF attachment
+    with open("1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf", "rb") as f:
+        pdf_content = f.read()
+    mock_zotero.create_file(handle, "On computable numbers.pdf", pdf_content)
+    
+    # Create existing markdown attachment with original content
+    original_md_content = b"# Original markdown\nSome existing notes."
+    md_attachment_handle = mock_zotero.create_file(handle, "On computable numbers.md", original_md_content)
+    
+    # Add annotated file to reMarkable's read folder
+    with open("tests/on computable numbers - RMPP - highlighter tool v6.rmn", "rb") as f:
+        rmdoc_content = f.read()
+    mock_rm.upload_file("Zotero/read/On computable numbers.pdf", rmdoc_content)
+    
+    # Call rmToZot to pull from reMarkable
+    rmToZot(zotero=mock_zotero, rm=mock_rm, read_folder="read")
+    
+    # Verify that the existing markdown attachment was updated (remarks includes a timestamp which'll be different)
+    updated_content = mock_zotero.get_file_content(md_attachment_handle)
+    assert updated_content != original_md_content, "Markdown content should have changed due to timestamp"
+    
+    # Verify that the markdown attachment has the "annotated" tag
+    md_tags = mock_zotero.get_tags(md_attachment_handle)
+    assert "annotated" in md_tags, "Markdown attachment should have annotated tag"

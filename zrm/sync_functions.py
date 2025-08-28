@@ -276,7 +276,7 @@ def attach_pdf_to_zotero_document(rendered_remarks_pdf: Path, zotero_tree: Zoter
             with open(md_path, "rb") as f:
                 md_content = f.read()
             if md_attachment:
-                new_attachment = zotero_tree.update_file_content(md_attachment.handle, md_content)
+                new_attachment = zotero_tree.update_file_content(entry.handle, md_attachment.handle, md_content)
                 if new_attachment:
                     zotero_tree.add_tags(new_attachment, ["annotated"])
                     logger.info(f"{md_attachment.name} MD successfully attached to Zotero entry '{document_name}'")
