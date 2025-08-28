@@ -49,7 +49,7 @@ def main():
         write_config("config.yml")
 
     zot, webdav, folders = load_config("config.yml")
-    read_folder = f"/Zotero/{folders['read']}/"
+    read_folder = folders['read']
     
     try:
         opts, args = getopt.getopt(argv, "m:")
