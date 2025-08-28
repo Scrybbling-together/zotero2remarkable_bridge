@@ -32,8 +32,8 @@ def write_config(file_name):
     config_data = {}
     input("Couldn't find config file. Let's create one! Press Enter to continue...\n")
     print("On your ReMarkable you should have created a folder called Zotero in the root directory.\nIn the following specify ONLY the names of the subfolders, e. g 'read' instead of 'zotero/read'.\n")
-    config_data["UNREAD_FOLDER"] = normalize_rm_path(input("Which ReMarkable folder should files be synced to? "))
-    config_data["READ_FOLDER"] = normalize_rm_path(input("Which ReMarkable folder should files be synced from? "))
+    config_data["UNREAD_FOLDER"] = input("Which ReMarkable folder should files be synced to? ")
+    config_data["READ_FOLDER"] = input("Which ReMarkable folder should files be synced from? ")
     print("You can find your library ID on this page")
     print("Under Applications > user ID, \"Your user ID for use in API calls is {COPY THIS}\"")
     print("https://www.zotero.org/settings/security")
