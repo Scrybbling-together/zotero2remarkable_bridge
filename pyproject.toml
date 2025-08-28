@@ -26,5 +26,6 @@ zrm = "zrm.zotero_rm_bridge:main"
 
 [tool.pytest.ini_options]
 markers = [
-    "e2e: end-to-end tests with real reMarkable and Zotero accounts"
+    "e2e: end-to-end tests with real reMarkable and Zotero accounts",
+    "mock: fast unit tests using mock APIs"
 ]

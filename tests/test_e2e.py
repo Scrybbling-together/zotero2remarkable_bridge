@@ -1,5 +1,5 @@
 """
-Tests for sync round trip functionality using mock filetrees.
+Tests that use a real reMarkable and Zotero account for highest certainty that the script actually works.
 """
 import logging
 
@@ -23,7 +23,7 @@ def test_sync_round_trip_real():
 
     paper_name = "On computable numbers"
 
-    handle = zotero_tree.create_collection([paper_name])
+    handle = zotero_tree.create_item([paper_name])
 
     with open("1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf", "rb") as f:
         pdf_content = f.read()

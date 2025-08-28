@@ -78,3 +78,12 @@ both: Go both ways, adding new files to ReMarkable and syncing back
         
 Defaults to "both".
 ```
+
+## Development
+
+### Testing
+
+We have both end-to-end tests which require a real reMarkable as well as a real Zotero account.
+
+To speed up development, we also have in-memory mocks of both the reMarkable as the Zotero API.
+Run these with `pytest -k "not e2e"`

@@ -28,9 +28,6 @@ def zotToRm(zotero: ZoteroAPI, rm: ReMarkableAPI, folders):
         logger.info(f"Found {len(sync_items)} items to sync...")
         for item in tqdm(sync_items):
             sync_to_rm_filetree(item.handle, zotero, rm, folders)
-        
-        for item in sync_items:
-            zotero.remove_tags(item.handle, ["to_sync"])
     else:
         logger.info("Nothing to sync from Zotero")
 

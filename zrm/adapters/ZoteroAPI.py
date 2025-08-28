@@ -34,13 +34,7 @@ class ZoteroAPI:
             self._item_cache.clear()
             self._collection_cache.clear()
 
-    def create_collection(self, path: List[str]) -> str:
-        """Note, Zotero itself has a concept of "collections", by "collection" in the abstract tree
-        The abstract file tree considers a folder or directory or anything else that can hold multiple other files or folders
-        a "collection".
-
-        Entries in a zotero library are modelled as "collections" in this API
-        """
+    def create_item(self, path: List[str]) -> str:
         # Create standalone item
         item_template = self.zot.item_template("document")
         item_template["title"] = path[0]

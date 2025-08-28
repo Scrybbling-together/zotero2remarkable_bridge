@@ -79,8 +79,29 @@ def upload_file(file_path, target_folder):
     uploader = subprocess.run([rmapi_location, "put", file_path, target_folder], capture_output=True, text=True)
     success = uploader.returncode == 0
     if not success:
-        logger.info(uploader.stdout)
-        logger.error(uploader.stderr)
+        # Check if failure was due to existing file
+        if "entry already exists" in uploader.stderr:
+            from pathlib import Path
+            filename = Path(file_path).stem  # filename without extension
+            full_remote_path = f"{target_folder}/{filename}"
+            
+            logger.info(f"File already exists, deleting and retrying upload...")
+            # Try to delete the existing file
+            if delete_file(full_remote_path):
+                logger.info(f"Deleted existing file, retrying upload...")
+                # Retry upload
+                uploader_retry = subprocess.run([rmapi_location, "put", file_path, target_folder], capture_output=True, text=True)
+                success = uploader_retry.returncode == 0
+                if not success:
+                    logger.info(uploader_retry.stdout)
+                    logger.error(uploader_retry.stderr)
+                else:
+                    logger.info(f"Successfully overwritten file in {target_folder}")
+            else:
+                logger.error(f"Failed to delete existing file for overwrite")
+        else:
+            logger.info(uploader.stdout)
+            logger.error(uploader.stderr)
     return success
 
 

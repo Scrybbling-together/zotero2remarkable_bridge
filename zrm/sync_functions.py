@@ -184,18 +184,25 @@ def sync_to_rm_filetree(handle: str, zotero_tree: ZoteroAPI, rm_tree: ReMarkable
     attachments = [attachment for attachment in attachments if attachment.name.endswith(".pdf")]
     logger.info(f"Syncing {len(attachments)} attachments to reMarkable")
 
+    all_attachments_synced = True
+
     for attachment in attachments:
         logger.info(f"Processing `{attachment}`")
 
         try:
             content = zotero_tree.get_file_content(attachment.handle)
             if rm_tree.upload_file(os.path.join("Zotero", folders['unread'], attachment.name), content):
-                zotero_tree.add_tags(handle, ["synced"])
                 logger.info(f"Uploaded {attachment} to reMarkable.")
             else:
+                all_attachments_synced = False
                 logger.error(f"Failed to upload {attachment} to reMarkable.")
         except Exception as e:
+            all_attachments_synced = False
             logger.error(f"Error processing {attachment}: {str(e)}")
+
+    if all_attachments_synced:
+        zotero_tree.add_tags(handle, ["synced"])
+        zotero_tree.remove_tags(handle, ["to_sync"])
 
 def attach_remarks_render_to_zotero_entry(rendered_remarks_pdf: Path, zotero_tree: ZoteroAPI):
     """Attach annotated PDF back to Zotero using filetree interface."""
