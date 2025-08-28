@@ -3,10 +3,11 @@ Tests for sync round trip functionality using mock filetrees.
 """
 import logging
 
+import pytest
 
 from zrm.config_functions import load_config
-from zrm.filetreeAdapters.ReMarkableAPI import ReMarkableAPI
-from zrm.filetreeAdapters.ZoteroAPI import ZoteroAPI
+from zrm.adapters.ReMarkableAPI import ReMarkableAPI
+from zrm.adapters.ZoteroAPI import ZoteroAPI
 from zrm.zotero_rm_bridge import zotToRm, rmToZot
 
 VALID_RM_DOCUMENT = "tests/on computable numbers - RMPP - highlighter tool v6.rmn"
@@ -14,6 +15,7 @@ VALID_RM_DOCUMENT = "tests/on computable numbers - RMPP - highlighter tool v6.rm
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+@pytest.mark.e2e
 def test_sync_round_trip_real():
     zot, webdav, folders = load_config("config.yml")
     zotero_tree = ZoteroAPI(zotero_client=zot)
@@ -25,7 +27,7 @@ def test_sync_round_trip_real():
 
     with open("1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf", "rb") as f:
         pdf_content = f.read()
-    zotero_tree.create_file(handle, "On computable numbers.pdf", pdf_content, "application/pdf")
+    zotero_tree.create_file(handle, "On computable numbers.pdf", pdf_content)
     zotero_tree.add_tags(handle, ["to_sync"])
 
     assert "synced" not in zotero_tree.get_tags(handle)
@@ -41,7 +43,7 @@ def test_sync_round_trip_real():
     # Afterward, when done annotating, they move it to the read folder
     # these two operations mimic an "mv" from unread to read
     assert rm_tree.delete_file_or_folder("Zotero/unread/" + paper_name)
-    result = rm_tree.create_file("Zotero/read/" + paper_name + ".pdf", pdf_content, "application/pdf")
+    result = rm_tree.upload_file("Zotero/read/" + paper_name + ".pdf", pdf_content)
     assert result
 
     rmToZot(zotero=zotero_tree, rm=rm_tree, read_folder="read")

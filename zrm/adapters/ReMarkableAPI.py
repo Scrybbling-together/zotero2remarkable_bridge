@@ -14,7 +14,7 @@ class ReMarkableAPI:
         if not rmapi.check_rmapi():
             raise RuntimeError("rmapi is not properly configured or accessible")
 
-    def create_file(self, path: str, content: bytes, content_type: str = "application/octet-stream") -> bool:
+    def upload_file(self, path: str, content: bytes) -> bool:
         """Upload a file to reMarkable."""
         try:
             if len(path) < 1:
@@ -33,14 +33,13 @@ class ReMarkableAPI:
                         return success
                     except Exception as e:
                         logger.error(e)
-                    finally:
-                        Path(f.name).unlink(missing_ok=True)
+                        return False
 
         except Exception as e:
             logger.error(e)
             return False
 
-    def node_exists(self, path: str) -> bool:
+    def file_or_folder_exists(self, path: str) -> bool:
         """Check if a file or folder exists."""
         path = Path(path)
 
@@ -56,23 +55,20 @@ class ReMarkableAPI:
 
         return False
 
-    def is_collection(self, path: List[str]) -> bool:
+    def is_folder(self, path: str) -> bool:
         """Check if the path represents a folder."""
         if not path:
             return True  # Root is always a collection
 
-        # In rmapi, we determine if something is a collection by checking if it has children
-        files = rmapi.get_files(path)
-
         # If get_files succeeds and returns a list, it's a folder
-        return isinstance(files, list)
+        return isinstance(rmapi.get_files(path), list)
 
     def is_file(self, path: str) -> bool:
         """Check if the path represents a file."""
         if not path:
-            return False  # Root is not a file
+            return False
             
-        return self.node_exists(path) and not self.is_collection(path)
+        return self.file_or_folder_exists(path) and not self.is_folder(path)
     
     def get_file_content(self, path: str) -> bytes:
         """Download and return file content."""

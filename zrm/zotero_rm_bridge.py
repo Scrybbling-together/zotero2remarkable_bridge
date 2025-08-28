@@ -10,8 +10,8 @@ from tqdm import tqdm
 import logging.config
 
 from zrm.config_functions import write_config, load_config
-from zrm.filetreeAdapters.ReMarkableAPI import ReMarkableAPI
-from zrm.filetreeAdapters.ZoteroAPI import ZoteroAPI
+from zrm.adapters.ReMarkableAPI import ReMarkableAPI
+from zrm.adapters.ZoteroAPI import ZoteroAPI
 from zrm.sync_functions import sync_to_rm_filetree, attach_remarks_render_to_zotero_entry
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(), loggi
 
 
 def zotToRm(zotero: ZoteroAPI, rm: ReMarkableAPI, folders):
-    """Push files from Zotero to reMarkable using filetree interface."""
+    """Push files from Zotero to reMarkable."""
     logger.info("Syncing from Zotero to reMarkable")
     
     sync_items = zotero.find_nodes_with_tag("to_sync")
@@ -36,17 +36,16 @@ def zotToRm(zotero: ZoteroAPI, rm: ReMarkableAPI, folders):
 
 
 def rmToZot(zotero: ZoteroAPI, rm: ReMarkableAPI, read_folder: str):
-    """Pull files from reMarkable to Zotero using filetree interface."""
+    """Pull files from reMarkable to Zotero."""
     logger.info("Syncing from reMarkable to Zotero")
     rm_folder_path = os.path.join("Zotero", read_folder)
-    if rm.node_exists(rm_folder_path):
+    if rm.is_folder(rm_folder_path):
         files_list = rm.list_children(rm_folder_path)
 
         if files_list:
             logger.info(f"There are {len(files_list)} files to download from the reMarkable")
-            for filename in tqdm(files_list):
-                path = os.path.join(rm_folder_path, filename)
-                content = rm.get_file_content(path)
+            for rm_filename in tqdm(files_list):
+                content = rm.get_file_content(os.path.join(rm_folder_path, rm_filename))
                 with tempfile.TemporaryDirectory() as temp_path:
                     rmn_path = os.path.join(temp_path, "process_me.rmn")
                     with open(rmn_path, "wb") as f:

@@ -47,6 +47,7 @@ def get_children(folder: str) -> bool | List[str]:
 
 def get_files(folder: str) -> bool | List[str]:
     # Get all files from a specific folder. Output is sanitized and subfolders are excluded
+    logger.error(f"Checking files in folder {folder}")
     files = subprocess.run([rmapi_location, "ls", folder], capture_output=True, text=True)
     success = files.returncode == 0
     if success:

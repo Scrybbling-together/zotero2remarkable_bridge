@@ -5,7 +5,7 @@ from typing import List, Any, Dict, Optional
 
 from pyzotero.zotero import Zotero
 
-from zrm.filetreeAdapters.AbstractFiletree import TreeNode
+from zrm.adapters.TreeNode import TreeNode
 
 
 class ZoteroAPI:
@@ -48,8 +48,7 @@ class ZoteroAPI:
         self._invalidate_cache()
         return result['successful']['0']['key']
 
-    def create_file(self, handle: str, filename: str, content: bytes,
-                    content_type: str = "application/octet-stream") -> str:
+    def create_file(self, handle: str, filename: str, content: bytes) -> str:
         """Create a file attachment"""
         with tempfile.TemporaryDirectory() as d:
             temp_path = str((Path(d) / Path(filename)).absolute())
@@ -57,22 +56,20 @@ class ZoteroAPI:
                 f.write(content)
                 f.flush()
 
-                try:
-                    # Create attachment using Zotero API
-                    result = self.zot.attachment_simple([temp_path], handle)
-                    if len(result['success']):
-                        key_ = result['success'][0]['key']
-                        self._invalidate_cache(handle)
-                        return key_
-                    elif len(result['unchanged']):
-                        key_ = result['unchanged'][0]['key']
-                        self._invalidate_cache(handle)
-                        return key_
-                finally:
-                    # Clean up temporary file
-                    Path(temp_path).unlink(missing_ok=True)
+                # Create attachment using Zotero API
+                result = self.zot.attachment_simple([temp_path], handle)
+                if len(result['success']):
+                    key = result['success'][0]['key']
+                    self._invalidate_cache(handle)
+                    return key
+                elif len(result['unchanged']):
+                    key = result['unchanged'][0]['key']
+                    self._invalidate_cache(handle)
+                    return key
 
-    def node_exists(self, handle: str) -> bool:
+        raise RuntimeError(f"was unable to create Zotero file {filename} for {handle}")
+
+    def item_exists(self, handle: str) -> bool:
         """Check if a node exists at the given path."""
         return self._get_item_by_key(handle) is not None
 
