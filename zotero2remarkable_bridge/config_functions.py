@@ -14,7 +14,7 @@ def load_config(config_file):
         except yaml.YAMLError as exc:
             logger.exception(exc)
     zot = zotero.Zotero(config_dict["LIBRARY_ID"], config_dict["LIBRARY_TYPE"], config_dict["API_KEY"])
-    folders = {"unread": config_dict["UNREAD_FOLDER"], "read": config_dict["READ_FOLDER"]}
+    folders = {"unread": normalize_rm_path(config_dict["UNREAD_FOLDER"]), "read": normalize_rm_path(config_dict["READ_FOLDER"])}
     if config_dict["USE_WEBDAV"] == "True":
         webdav_data = {
             "webdav_hostname": config_dict["WEBDAV_HOSTNAME"],
