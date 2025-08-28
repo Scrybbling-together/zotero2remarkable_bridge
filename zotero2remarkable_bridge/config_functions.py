@@ -32,8 +32,8 @@ def write_config(file_name):
     config_data = {}
     input("Couldn't find config file. Let's create one! Press Enter to continue...\n")
     print("On your ReMarkable you should have created a folder called Zotero in the root directory.\nIn the following specify ONLY the names of the subfolders, e. g 'read' instead of 'zotero/read'.\n")
-    config_data["UNREAD_FOLDER"] = normalize_remarkable_path(input("Which ReMarkable folder should files be synced to? "))
-    config_data["READ_FOLDER"] = normalize_remarkable_path(input("Which ReMarkable folder should files be synced from? "))
+    config_data["UNREAD_FOLDER"] = normalize_rm_path(input("Which ReMarkable folder should files be synced to? "))
+    config_data["READ_FOLDER"] = normalize_rm_path(input("Which ReMarkable folder should files be synced from? "))
     print("You can find your library ID on this page")
     print("Under Applications > user ID, \"Your user ID for use in API calls is {COPY THIS}\"")
     print("https://www.zotero.org/settings/security")
@@ -56,13 +56,13 @@ def write_config(file_name):
     logger.info(f"Config written to {file_name}\n If something went wrong, please edit config manually.")
 
 
-def normalize_remarkable_path(folder_name: str) -> str:
+def normalize_rm_path(folder_name: str) -> str:
     """Performs cleanup of folder names, mainly for cases like 'Zotero/read' which should just be 'read'"""
-    folder_name = folder_name.strip() # Removes leading whitespacs
-
-    match folder_name:
-        case str(s) if s.startswith("/"):
-            return normalize_remarkable_path(s[1:]) # recursively removes all leading slashes
+    match folder_name:        
+        case str(s) if s.startswith("/") or s.startswith(" "):
+            return normalize_rm_path(s[1:]) # recursively removes all leading slashes and whitespaces
+        case str(s) if s.endswith(" "):
+            return normalize_rm_path(s[:-1]) # recursively removes trailing whitespace
         case str(s) if s.lower().startswith("zotero/"):
             return s[7:] # removes "zotero/" (case insensitive)
         case _:
