@@ -41,17 +41,18 @@ def write_config(file_name):
     config_data["LIBRARY_TYPE"] = input("Enter Zotero library type (user/group): ")
     config_data["API_KEY"] = input("Enter Zotero API key: ")
     config_data["USE_WEBDAV"] = input("Does Zotero use WebDAV storage for file sync (True/False)? ")
-    if config_data["USE_WEBDAV"] == "True":
+    if config_data["USE_WEBDAV"].lower() == "true":
         config_data["WEBDAV_HOSTNAME"] = input("Enter path to WebDAV folder (same as in Zotero config): ")
         config_data["WEBDAV_USER"] = input("Enter WebDAV username: ")
         config_data["WEBDAV_PWD"] = input("Enter WebDAV password (consider creating an app token as password is safed in clear text): ")
-    else:
-        config_data["WEBDAV_HOSTNAME"] = "# Only relevant if USE_WEBDAV == True"
-        config_data["WEBDAV_USER"] = "# Only relevant if USE_WEBDAV == True"
-        config_data["WEBDAV_PWD"] = "# Only relevant if USE_WEBDAV == True"
 
     with open(file_name, "w") as file:
         yaml.dump(config_data, file)
+        if config_data["USE_WEBDAV"].lower() != "true":
+            file.write("\n## Uncomment the following 3 lines if you want to use WebDAV")
+            file.write("\n#WEBDAV_HOSTNAME: ")
+            file.write("\n#WEBDAV_USER: ")
+            file.write("\n#WEBDAV_PWD: ")
     logger.info(f"Config written to {file_name}\n If something went wrong, please edit config manually.")
 
 
