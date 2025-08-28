@@ -124,51 +124,6 @@ def download_from_rm(entity: str, folder: str) -> Path:
     return Path(temp_path / pdf_name)
 
 
-def attach_pdf_to_zotero_document(pdf_path: Path, zot: Zotero):
-    md_name = f"{pdf_path.stem} _obsidian.md"
-    md_path = pdf_path.with_name(md_name)
-
-    annotated_name = f"(Annotated) {pdf_path.stem}{pdf_path.suffix}"
-    annotated_path = pdf_path.with_name(annotated_name)
-    logging.info(f"Have an annotated PDF {str(pdf_path)} to upload")
-
-    pdf_path.rename(str(annotated_path) + ".pdf")
-
-    for document in zot.items(tag="synced"):
-        doc_id = document["key"]
-        doc_name = document.get("data", {}).get("title") or doc_id
-        doc_tags = document.get("data", {}).get("tags")
-
-        if any(tag["tag"] == "annotated" for tag in doc_tags):
-            # if the attachment was previously updated, skip it
-            logging.info(f"Zotero entry '{doc_name}' is already annotated - skipping upload.")
-            continue
-
-        attachments = zot.children(doc_id)
-        matching_attachment = next((att for att in attachments if att.get("data", {}).get("filename") == pdf_path.name), None)
-
-        if matching_attachment:
-            files_to_upload = [str(annotated_path)]
-            if md_path.exists():
-                files_to_upload.append(str(md_path))
-
-            upload = zot.attachment_simple(files_to_upload, doc_id)
-            success = upload.get("success")
-            unchanged = upload.get("unchanged")
-            if success or unchanged:
-                logging.info(f"'{pdf_path}' successfully attached to Zotero entry '{doc_name}'.")
-                zot.add_tags(document, "annotated")
-                return
-            else:
-                logging.warning(f"Tried uploading '{pdf_path} to Zotero item '{doc_name}, but was unsuccessful'")
-                logging.warning(f"Was the upload successful? {success}")
-                logging.warning(f"Was the upload unchanged? {unchanged}")
-                return
-        else:
-            logging.warning(
-                f"There's an annotated PDF '{annotated_name}' to upload, but we're unable to find the appropriate item in Zotero")
-
-
 def get_md5(pdf) -> None | str:
     if pdf.is_file():
         with open(pdf, "rb") as f:
@@ -289,23 +244,23 @@ def sync_to_rm_filetree(handle: str, zotero_tree: ZoteroAPI, rm_tree: ReMarkable
         zotero_tree.add_tags(handle, ["synced"])
         zotero_tree.remove_tags(handle, ["to_sync"])
 
-def attach_remarks_render_to_zotero_entry(rendered_remarks_pdf: Path, zotero_tree: ZoteroAPI):
+
+def attach_pdf_to_zotero_document(rendered_remarks_pdf: Path, zotero_tree: ZoteroAPI):
     """Attach annotated PDF back to Zotero using filetree interface."""
     document_name = rendered_remarks_pdf.stem.replace(" _remarks", "")
     logger.info(f"Have an annotated PDF \"{document_name}\" to upload")
 
     for entry in zotero_tree.find_nodes_with_tag("synced"):
         attachments = zotero_tree.list_children(entry.handle)
-        md_attachment = next(iter(att for att in attachments if
-                         att.name.endswith(".md") and str(rendered_remarks_pdf.name).replace(
-                             att.name.replace('.pdf', ''), "") == " _remarks.pdf"), None)
-        pdf_attachment = next(iter(att for att in attachments if
-                                   att.name.endswith(".pdf") and
-                                   str(rendered_remarks_pdf.name).replace(att.name.replace('.pdf', ''), "") == " _remarks.pdf"), None)
+        md_attachment = next(
+            iter(att for att in attachments if (
+                    Path(att.name).name.replace(document_name, "") == ".md" or
+                    Path(att.path).name.replace(document_name, "") == ".md")), None)
+        pdf_attachment = next(
+            iter(att for att in attachments if (
+                Path(att.name).name.replace(document_name, "") == ".pdf" or
+                Path(att.path).name.replace(document_name, "") == ".pdf")), None)
 
-
-        # TODO:
-        # or Path(att.get("data", {}).get("path", "")).name == pdf_path.name
         if pdf_attachment:
             with open(rendered_remarks_pdf, "rb") as f:
                 pdf_content = f.read()
@@ -313,8 +268,7 @@ def attach_remarks_render_to_zotero_entry(rendered_remarks_pdf: Path, zotero_tre
             new_attachment = zotero_tree.update_file_content(entry.handle, pdf_attachment.handle, pdf_content)
             if new_attachment:
                 zotero_tree.add_tags(new_attachment, ["annotated"])
-                logger.info(
-                    f"'{rendered_remarks_pdf}' PDF successfully attached to Zotero entry '{document_name}'.")
+                logger.info(f"'{rendered_remarks_pdf}' PDF successfully attached to Zotero entry '{document_name}'.")
             else:
                 logger.warning(f"Failed to create attachment for item at {entry}")
 
@@ -327,17 +281,17 @@ def attach_remarks_render_to_zotero_entry(rendered_remarks_pdf: Path, zotero_tre
                     zotero_tree.add_tags(new_attachment, ["annotated"])
                     logger.info(f"{md_attachment.name} MD successfully attached to Zotero entry '{document_name}'")
                 else:
-                    logger.warning(f"Was unable to attach {md_attachment.name} MD to Zotero entry '{document_name}#{entry.handle}'")
+                    logger.warning(
+                        f"Was unable to attach {md_attachment.name} MD to Zotero entry '{document_name}#{entry.handle}'")
             else:
                 new_attachment = zotero_tree.create_file(entry.handle, document_name + ".md", md_content)
                 if new_attachment:
                     zotero_tree.add_tags(new_attachment, ["annotated"])
                     logger.info(f"{document_name} MD successfully attached to Zotero entry '{document_name}'")
                 else:
-                    logger.warning(f"Was unable to attach {md_attachment.name} MD to Zotero entry '{document_name}#{entry.handle}'")
+                    logger.warning(
+                        f"Was unable to attach {md_attachment.name} MD to Zotero entry '{document_name}#{entry.handle}'")
             return
-
-
 
     logger.warning(
         f"There's an annotated PDF '{document_name}' to upload, but we're unable to find the appropriate item in Zotero")

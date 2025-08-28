@@ -12,7 +12,7 @@ import logging.config
 from zrm.config_functions import write_config, load_config
 from zrm.adapters.ReMarkableAPI import ReMarkableAPI
 from zrm.adapters.ZoteroAPI import ZoteroAPI
-from zrm.sync_functions import sync_to_rm_filetree, attach_remarks_render_to_zotero_entry
+from zrm.sync_functions import sync_to_rm_filetree, attach_pdf_to_zotero_document
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(), logging.FileHandler(filename="sync.log")])
@@ -51,7 +51,7 @@ def rmToZot(zotero: ZoteroAPI, rm: ReMarkableAPI, read_folder: str):
                     remarks.run_remarks(rmn_path, temp_path)
                     rendered_pdf = [file for file in os.listdir(temp_path) if file.endswith(" _remarks.pdf")]
                     if rendered_pdf[0]:
-                        attach_remarks_render_to_zotero_entry(Path(temp_path) / (rendered_pdf[0]), zotero)
+                        attach_pdf_to_zotero_document(Path(temp_path) / (rendered_pdf[0]), zotero)
                     else:
                         logging.error("Was unable to find the processed pdf")
         else:

@@ -4,7 +4,7 @@ Mock version of the sync round trip test using in-memory APIs.
 import logging
 import pytest
 
-from mocks import MockZoteroAPI, MockReMarkableAPI
+from tests.mocks import MockZoteroAPI, MockReMarkableAPI
 from zrm.zotero_rm_bridge import zotToRm, rmToZot
 
 logging.basicConfig(level=logging.INFO)

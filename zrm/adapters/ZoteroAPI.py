@@ -80,7 +80,7 @@ class ZoteroAPI:
                     return f.read()
             return None
 
-    def update_file_content(self, parent_handle: str, attachment_handle: str, content: bytes) -> bool:
+    def update_file_content(self, parent_handle: str, attachment_handle: str, content: bytes) -> str:
         """Update the content of an existing file attachment."""
         old_attachment = self._get_item_by_key(attachment_handle)
         name = old_attachment['data']['title']
@@ -93,10 +93,17 @@ class ZoteroAPI:
                 return new_attachment['success'][0]['key']
 
     def list_children(self, handle: str) -> List[TreeNode]:
-        """List the children of a collection node."""
+        """List the children of a collection node.
+        """
         children = self.zot.children(handle)
-        return [TreeNode(handle=child['key'], name=child['data']['title'], type=child['data']['itemType'],
-                         tags=child['data']['tags']) for child in children]
+
+        return_list = []
+        for child in children:
+            data = child.get("data", {})
+            return_list.append(
+                TreeNode(handle=child['key'], name=data.get('filename', ""), type=data.get('itemType', ''),
+                         tags=data.get('tags', []), path=data.get('path', '')))
+        return return_list
 
     def add_tags(self, handle: str, tags: List[str]) -> bool:
         """Add tags to an item."""
@@ -136,98 +143,12 @@ class ZoteroAPI:
     def find_nodes_with_tag(self, tag: str) -> List[TreeNode]:
         """Find all items with a specific tag."""
         items = self.zot.items(tag=tag)
-        return [TreeNode(tags=item['data']['tags'], handle=item['key'], metadata=item, name=item['data']['title'],
-            type=item['data']['itemType']) for item in items]
 
-    def set_metadata(self, path: List[str], key: str, value: Any) -> bool:
-        """Set metadata for an item."""
-        try:
-            if len(path) == 2 and path[0] == "items":
-                item_key = path[1]
-                item = self._get_item_by_key(item_key)
-                if item:
-                    # Map common metadata keys to Zotero fields
-                    if key in item.get("data", {}):
-                        item["data"][key] = value
-                        self.zot.update_item(item)
-                        self._invalidate_cache(item_key)
-                        return True
-            return False
-        except Exception:
-            return False
+        return_list = []
+        for child in items:
+            data = child.get("data", {})
+            return_list.append(
+                TreeNode(handle=child['key'], name=data.get('filename', ""), type=data.get('itemType', ''),
+                         tags=data.get('tags', []), path=data.get('path', '')))
+        return return_list
 
-    def get_metadata(self, path: List[str], key: str) -> Any:
-        """Get metadata for an item."""
-        try:
-            if len(path) == 2 and path[0] == "items":
-                item_key = path[1]
-                item = self._get_item_by_key(item_key)
-                if item:
-                    return item.get("data", {}).get(key)
-            elif len(path) == 4 and path[0] == "items" and path[2] == "attachments":
-                # Get attachment metadata
-                parent_key = path[1]
-                attachment_key = path[3]
-                attachments = self.zot.children(parent_key)
-                attachment = next((att for att in attachments if att["key"] == attachment_key), None)
-                if attachment:
-                    return attachment.get("data", {}).get(key)
-            return None
-        except Exception:
-            return None
-
-    def get_all_metadata(self, path: List[str]) -> Dict[str, Any]:
-        """Get all metadata for an item."""
-        try:
-            if len(path) == 2 and path[0] == "items":
-                item_key = path[1]
-                item = self._get_item_by_key(item_key)
-                if item:
-                    return item.get("data", {})
-            elif len(path) == 4 and path[0] == "items" and path[2] == "attachments":
-                # Get attachment metadata
-                parent_key = path[1]
-                attachment_key = path[3]
-                attachments = self.zot.children(parent_key)
-                attachment = next((att for att in attachments if att["key"] == attachment_key), None)
-                if attachment:
-                    return attachment.get("data", {})
-            return {}
-        except Exception:
-            return {}
-
-    def delete_node(self, path: List[str]) -> bool:
-        """Delete a node (item, attachment, or collection)."""
-        try:
-            if len(path) == 2 and path[0] == "items":
-                # Delete an item
-                item_key = path[1]
-                item = self._get_item_by_key(item_key)
-                if item:
-                    self.zot.delete_item(item)
-                    self._invalidate_cache(item_key)
-                    return True
-
-            elif len(path) == 4 and path[0] == "items" and path[2] == "attachments":
-                # Delete an attachment
-                parent_key = path[1]
-                attachment_key = path[3]
-                attachments = self.zot.children(parent_key)
-                attachment = next((att for att in attachments if att["key"] == attachment_key), None)
-                if attachment:
-                    self.zot.delete_item(attachment)
-                    self._invalidate_cache(parent_key)
-                    return True
-
-            elif len(path) == 2 and path[0] == "collections":
-                # Delete a collection
-                collection_key = path[1]
-                collection = self._get_collection_by_key(collection_key)
-                if collection:
-                    self.zot.delete_collection(collection)
-                    self._invalidate_cache()
-                    return True
-
-            return False
-        except Exception:
-            return False

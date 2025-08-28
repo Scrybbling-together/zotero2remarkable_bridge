@@ -9,6 +9,7 @@ class TreeNode:
     handle: str = field(default_factory=str)
     type: str = field(default_factory=str)
     name: str = field(default_factory=str)
+    path: str = field(default_factory=str)
 
 
 
