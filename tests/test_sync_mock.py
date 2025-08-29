@@ -298,3 +298,42 @@ def test_rmToZot_updates_existing_markdown_attachment():
     # Verify that the markdown attachment has the "annotated" tag
     md_tags = mock_zotero.get_tags(md_attachment_handle)
     assert "annotated" in md_tags, "Markdown attachment should have annotated tag"
+
+
+@pytest.mark.mock
+def test_rmToZot_deletes_files_after_successful_sync():
+    """Test that rmToZot deletes files from reMarkable after successful sync."""
+    mock_zotero = MockZoteroAPI()
+    mock_rm = MockReMarkableAPI(files={}, folders={"", "Zotero", "Zotero/unread", "Zotero/read"})
+    
+    paper_name = "On computable numbers"
+    
+    # Create item in Zotero with synced tag
+    handle = mock_zotero.create_item([paper_name])
+    mock_zotero.add_tags(handle, ["synced"])
+    
+    # Create existing PDF attachment
+    with open("1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf", "rb") as f:
+        pdf_content = f.read()
+    mock_zotero.create_file(handle, "On computable numbers.pdf", pdf_content)
+    
+    # Add annotated file to reMarkable's read folder
+    with open("tests/on computable numbers - RMPP - highlighter tool v6.rmn", "rb") as f:
+        rmdoc_content = f.read()
+    mock_rm.upload_file("Zotero/read/On computable numbers.pdf", rmdoc_content)
+    
+    # Verify file exists before sync
+    assert mock_rm.is_file("Zotero/read/On computable numbers.pdf")
+    
+    # First call to rmToZot - should process and delete the file
+    rmToZot(zotero=mock_zotero, rm=mock_rm, read_folder="read")
+    
+    # Verify file was deleted from reMarkable after successful sync
+    assert not mock_rm.is_file("Zotero/read/On computable numbers.pdf")
+    
+    # Second call to rmToZot - should find no files to sync
+    rmToZot(zotero=mock_zotero, rm=mock_rm, read_folder="read")
+    
+    # Verify read folder is empty (no files to process)
+    files_in_read_folder = mock_rm.list_children("Zotero/read")
+    assert len(files_in_read_folder) == 0

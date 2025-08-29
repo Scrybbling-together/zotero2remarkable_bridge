@@ -42,7 +42,8 @@ def rmToZot(zotero: ZoteroAPI, rm: ReMarkableAPI, read_folder: str):
         if files_list:
             logger.info(f"There are {len(files_list)} files to download from the reMarkable")
             for rm_filename in tqdm(files_list):
-                content = rm.get_file_content(os.path.join(rm_folder_path, rm_filename))
+                rm_file_path = os.path.join(rm_folder_path, rm_filename)
+                content = rm.get_file_content(rm_file_path)
                 with tempfile.TemporaryDirectory() as temp_path:
                     rmn_path = os.path.join(temp_path, "process_me.rmn")
                     with open(rmn_path, "wb") as f:
@@ -52,6 +53,11 @@ def rmToZot(zotero: ZoteroAPI, rm: ReMarkableAPI, read_folder: str):
                     rendered_pdf = [file for file in os.listdir(temp_path) if file.endswith(" _remarks.pdf")]
                     if rendered_pdf[0]:
                         attach_pdf_to_zotero_document(Path(temp_path) / (rendered_pdf[0]), zotero)
+                        # Delete the file from reMarkable after successful processing
+                        if rm.delete_file_or_folder(rm_file_path):
+                            logger.info(f"Deleted {rm_filename} from reMarkable after successful sync")
+                        else:
+                            logger.warning(f"Failed to delete {rm_filename} from reMarkable")
                     else:
                         logging.error("Was unable to find the processed pdf")
         else:
