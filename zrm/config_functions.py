@@ -14,7 +14,7 @@ def load_config(config_file):
         except yaml.YAMLError as exc:
             logger.exception(exc)
     zot = zotero.Zotero(config_dict["LIBRARY_ID"], config_dict["LIBRARY_TYPE"], config_dict["API_KEY"])
-    folders = {"unread": config_dict["UNREAD_FOLDER"], "read": config_dict["READ_FOLDER"]}
+    folders = {"unread": normalize_rm_path(config_dict["UNREAD_FOLDER"]), "read": normalize_rm_path(config_dict["READ_FOLDER"])}
     if config_dict["USE_WEBDAV"] == "True":
         webdav_data = {
             "webdav_hostname": config_dict["WEBDAV_HOSTNAME"],
@@ -32,8 +32,8 @@ def write_config(file_name):
     config_data = {}
     input("Couldn't find config file. Let's create one! Press Enter to continue...\n")
     print("On your ReMarkable you should have created a folder called Zotero in the root directory.\nIn the following specify ONLY the names of the subfolders, e. g 'read' instead of 'zotero/read'.\n")
-    config_data["UNREAD_FOLDER"] = normalize_rm_path(input("Which ReMarkable folder should files be synced to? "))
-    config_data["READ_FOLDER"] = normalize_rm_path(input("Which ReMarkable folder should files be synced from? "))
+    config_data["UNREAD_FOLDER"] = input("Which ReMarkable folder should files be synced to? ")
+    config_data["READ_FOLDER"] = input("Which ReMarkable folder should files be synced from? ")
     print("You can find your library ID on this page")
     print("Under Applications > user ID, \"Your user ID for use in API calls is {COPY THIS}\"")
     print("https://www.zotero.org/settings/security")
