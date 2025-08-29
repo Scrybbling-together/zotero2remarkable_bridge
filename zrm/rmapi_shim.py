@@ -56,9 +56,7 @@ def get_files(folder: str) -> None | List[str]:
                 logger.warning(f"File `{file}` starts with ` Time` construct. What does this mean?")
                 logger.warning(f"Full output of `rmapi ls` for context, {result.stdout}")
             if file.startswith("[f]\t"):
-                files_list_new.append(file[len("[f]\t")])
-            if file[:3] != "[d]" and file != "":
-                files_list_new.append(file[4:])
+                files_list_new.append(file[len("[f]\t"):])
         return files_list_new
     return None
 

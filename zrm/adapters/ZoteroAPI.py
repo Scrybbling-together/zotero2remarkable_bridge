@@ -89,8 +89,17 @@ class ZoteroAPI:
                 f.write(content)
                 self.zot.delete_item(old_attachment)
                 new_attachment = self.zot.attachment_simple([f.name], parent_handle)
-                self._invalidate_cache(old_attachment['data']['key'])
-                return new_attachment['success'][0]['key']
+                old_key = old_attachment['data']['key']
+                self._invalidate_cache(old_key)
+                if new_attachment['success']:
+                    new_key = new_attachment['success'][0]['key']
+                    assert new_key != old_key
+                elif new_attachment['unchanged']:
+                    new_key = new_attachment['unchanged'][0]['key']
+                    assert new_key == old_key
+                else:
+                    raise RuntimeError(f"Was unable to find the key in the updated attachment: {new_attachment}")
+                return new_key
 
     def list_children(self, handle: str) -> List[TreeNode]:
         """List the children of a collection node.
