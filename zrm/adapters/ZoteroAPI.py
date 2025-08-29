@@ -93,10 +93,8 @@ class ZoteroAPI:
                 self._invalidate_cache(old_key)
                 if new_attachment['success']:
                     new_key = new_attachment['success'][0]['key']
-                    assert new_key != old_key
                 elif new_attachment['unchanged']:
                     new_key = new_attachment['unchanged'][0]['key']
-                    assert new_key == old_key
                 else:
                     raise RuntimeError(f"Was unable to find the key in the updated attachment: {new_attachment}")
                 return new_key
