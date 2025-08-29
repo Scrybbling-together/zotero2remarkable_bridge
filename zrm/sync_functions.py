@@ -20,43 +20,6 @@ from zrm.adapters.ZoteroAPI import ZoteroAPI
 logger = logging.getLogger("zotero_rM_bridge.sync_functions")
 
 
-def sync_to_rm(item, zot, folders):
-    temp_path = Path(tempfile.gettempdir())
-    item_id = item["key"]
-    attachments = zot.children(item_id)
-    logger.info(f"Syncing {len(attachments)} to reMarkable")
-    for entry in attachments:
-        if "contentType" in entry["data"] and entry["data"]["contentType"] == "application/pdf":
-            attachment_id = attachments[attachments.index(entry)]["key"]
-            item_data = zot.item(attachment_id)["data"]
-            if item_data["linkMode"] == "linked_file":
-                path = Path(item_data["path"])
-                attachment_name = path.name
-            else:
-                path = None
-                attachment_name = item_data["filename"]
-
-            logger.info(f"Processing `{attachment_name}`")
-
-            if path is None:
-                # Get actual file and repack it in reMarkable's file format
-                zot.dump(attachment_id, path=temp_path)
-            else:
-                logger.info(f"Copying linked file from {path}...")
-                # Copy the linked file from its current location
-                copy(path, temp_path)
-            file_name = temp_path / attachment_name
-            if file_name:
-                if rmapi.upload_file(file_name, f"/Zotero/{folders['unread']}"):
-                    zot.add_tags(item, "synced")
-                    os.remove(file_name)
-                    logger.info(f"Uploaded {attachment_name} to reMarkable.")
-                else:
-                    logger.error(f"Failed to upload {attachment_name} to reMarkable.")
-        else:
-            logger.warning("Found attachment, but it's not a PDF, skipping...")
-
-
 def sync_to_rm_webdav(item, zot, webdav, folders):
     temp_path = Path(tempfile.gettempdir())
     item_id = item["key"]

@@ -11,70 +11,71 @@ logger = logging.getLogger(__name__)
 # First try to find rmapi in current working directory
 rmapi_location = shutil.which("rmapi", path=Path.cwd())
 
+
+def run_rmapi_command(args: List[str], **kwargs) -> tuple[bool, subprocess.CompletedProcess]:
+    """Run rmapi command and handle common success/failure logging."""
+    result = subprocess.run([rmapi_location] + args, capture_output=True, text=True, **kwargs)
+    success = result.returncode == 0
+    if not success:
+        logger.info(result.stdout)
+        logger.error(result.stderr)
+    return success, result
+
 if rmapi_location is None:
     raise FileNotFoundError("Could not find 'rmapi' in current working directory or on your system PATH.")
 
 
 def check_rmapi():
-    check = subprocess.run([rmapi_location, "ls"], capture_output=True, text=True)
-    success = check.returncode == 0
-    if not success:
-        logger.info(check.stdout)
-        logger.error(check.stderr)
+    success, _ = run_rmapi_command(["ls"])
     return success
 
 
 def get_children(folder: str) -> None | List[str]:
     """Get all children in a specific folder."""
-    files = subprocess.run([rmapi_location, "ls", folder], capture_output=True, text=True)
-    success = files.returncode == 0
+    success, result = run_rmapi_command(["ls", folder])
     if success:
-        files_list = files.stdout.split("\n")
-        files_list_new = []
-        for file in files_list:
-            if file[:5] != " Time" and file != "":
-                files_list_new.append(file[4:])
-        return files_list_new
-    else:
-        logger.info(files.stdout)
-        logger.error(files.stderr)
-        return None
+        children_list = result.stdout.split("\n")
+        children_list_new = []
+        for file in children_list:
+            if file.startswith(" Time"):
+                logger.warning(f"Child `{file}` starts with ` Time` construct. What does this mean?")
+                logger.warning(f"Full output of `rmapi ls` for context, {result.stdout}")
+            if file:
+                children_list_new.append(file.split("\t", 1)[1])
+        return children_list_new
+    return None
 
 def get_files(folder: str) -> None | List[str]:
     # Get all files from a specific folder. Output is sanitized and subfolders are excluded
-    files = subprocess.run([rmapi_location, "ls", folder], capture_output=True, text=True)
-    success = files.returncode == 0
+    success, result = run_rmapi_command(["ls", folder])
     if success:
-        files_list = files.stdout.split("\n")
+        files_list = result.stdout.split("\n")
         files_list_new = []
         for file in files_list:
-            if file[:5] != " Time" and file[:3] != "[d]" and file != "":
+            if file.startswith(" Time"):
+                logger.warning(f"File `{file}` starts with ` Time` construct. What does this mean?")
+                logger.warning(f"Full output of `rmapi ls` for context, {result.stdout}")
+            if file.startswith("[f]\t"):
+                files_list_new.append(file[len("[f]\t")])
+            if file[:3] != "[d]" and file != "":
                 files_list_new.append(file[4:])
         return files_list_new
-    else:
-        logger.info(files.stdout)
-        logger.error(files.stderr)
-        return None
+    return None
 
 
 def download_file(file_path, working_dir):
     # Downloads a file (consisting of a zip file) to a specified directory
-    downloader = subprocess.run([rmapi_location, "get", file_path], cwd=working_dir, capture_output=True, text=True)
-    success = downloader.returncode == 0
-    if not success:
-        logger.info(downloader.stdout)
-        logger.error(downloader.stderr)
+    success, _ = run_rmapi_command(["get", file_path], cwd=working_dir)
     return success
 
 
 
 def upload_file(file_path, target_folder):
     # Upload a file to its destination folder
-    uploader = subprocess.run([rmapi_location, "put", file_path, target_folder], capture_output=True, text=True)
-    success = uploader.returncode == 0
+    success, result = run_rmapi_command(["put", file_path, target_folder])
     if not success:
         # Check if failure was due to existing file
-        if "entry already exists" in uploader.stderr:
+        if "entry already exists" in result.stderr:
             from pathlib import Path
             filename = Path(file_path).stem  # filename without extension
             full_remote_path = f"{target_folder}/{filename}"
@@ -84,25 +85,14 @@ def upload_file(file_path, target_folder):
             if delete_file(full_remote_path):
                 logger.info(f"Deleted existing file, retrying upload...")
                 # Retry upload
-                uploader_retry = subprocess.run([rmapi_location, "put", file_path, target_folder], capture_output=True, text=True)
-                success = uploader_retry.returncode == 0
-                if not success:
-                    logger.info(uploader_retry.stdout)
-                    logger.error(uploader_retry.stderr)
-                else:
+                success, _ = run_rmapi_command(["put", file_path, target_folder])
+                if success:
                     logger.info(f"Successfully overwritten file in {target_folder}")
             else:
                 logger.error(f"Failed to delete existing file for overwrite")
-        else:
-            logger.info(uploader.stdout)
-            logger.error(uploader.stderr)
     return success
 
 
 def delete_file(path):
-    deleter = subprocess.run([rmapi_location, "rm", path])
-    success = deleter.returncode == 0
-    if not success:
-        logger.info(deleter.stdout)
-        logger.error(deleter.stderr)
+    success, _ = run_rmapi_command(["rm", path])
     return success
