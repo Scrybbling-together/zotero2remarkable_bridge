@@ -215,14 +215,12 @@ def attach_pdf_to_zotero_document(rendered_remarks_pdf: Path, zotero_tree: Zoter
 
     for entry in zotero_tree.find_nodes_with_tag("synced"):
         attachments = zotero_tree.list_children(entry.handle)
-        md_attachment = next(
-            iter(att for att in attachments if (
-                    Path(att.name).name.replace(document_name, "") == ".md" or
-                    Path(att.path).name.replace(document_name, "") == ".md")), None)
-        pdf_attachment = next(
-            iter(att for att in attachments if (
-                Path(att.name).name.replace(document_name, "") == ".pdf" or
-                Path(att.path).name.replace(document_name, "") == ".pdf")), None)
+        md_attachment = next((att for att in attachments if 
+                             Path(att.name).name == document_name + ".md" or 
+                             Path(att.path).name == document_name + ".md"), None)
+        pdf_attachment = next((att for att in attachments if 
+                              Path(att.name).name == document_name + ".pdf" or 
+                              Path(att.path).name == document_name + ".pdf"), None)
 
         if pdf_attachment:
             with open(rendered_remarks_pdf, "rb") as f:
