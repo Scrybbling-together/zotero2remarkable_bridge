@@ -247,7 +247,7 @@ def sync_to_rm_filetree(handle: str, zotero_tree: ZoteroAPI, rm_tree: ReMarkable
 
 def attach_pdf_to_zotero_document(rendered_remarks_pdf: Path, zotero_tree: ZoteroAPI):
     """Attach annotated PDF back to Zotero using filetree interface."""
-    document_name = rendered_remarks_pdf.stem.replace(" _remarks", "")
+    document_name = rendered_remarks_pdf.stem.removesuffix(" _remarks")
     logger.info(f"Have an annotated PDF \"{document_name}\" to upload")
 
     for entry in zotero_tree.find_nodes_with_tag("synced"):

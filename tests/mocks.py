@@ -73,6 +73,7 @@ class MockZoteroAPI(ZoteroAPI):
                     handle=item_handle,
                     name=item['data']['title'],
                     type=item['data']['itemType'],
+                    path=item['data'].get('path', ""),
                     tags=item['data']['tags']
                 ))
         return children
@@ -120,6 +121,7 @@ class MockZoteroAPI(ZoteroAPI):
                     name=item['data']['title'],
                     type=item['data']['itemType'],
                     tags=item['data']['tags'],
+                    path=item['data'].get('path', ''),
                     metadata=item
                 ))
         return results

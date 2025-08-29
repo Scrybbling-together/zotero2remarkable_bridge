@@ -24,7 +24,7 @@ class ReMarkableAPI:
             filename = path.name
 
             with tempfile.TemporaryDirectory() as d:
-                with open(str(Path(d) / Path(filename)), "wb") as f:
+                with open(str(Path(d) / filename), "wb") as f:
                     f.write(content)
                     f.flush()
 
@@ -51,7 +51,7 @@ class ReMarkableAPI:
         files = rmapi.get_children(d)
 
         if files:
-            return path.name.replace(".pdf", "") in files
+            return path.name.removesuffix(".pdf") in files
 
         return False
 

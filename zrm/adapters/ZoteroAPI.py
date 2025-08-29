@@ -26,7 +26,7 @@ class ZoteroAPI:
             self._collection_cache[key] = self.zot.collection(key)
         return self._collection_cache[key]
 
-    def _invalidate_cache(self, item_key: str = None):
+    def _invalidate_cache(self, item_key: str | None = None):
         """Invalidate cache for specific item or all items."""
         if item_key:
             self._item_cache.pop(item_key, None)
@@ -45,7 +45,7 @@ class ZoteroAPI:
     def create_file(self, handle: str, filename: str, content: bytes) -> str:
         """Create a file attachment"""
         with tempfile.TemporaryDirectory() as d:
-            temp_path = str((Path(d) / Path(filename)).absolute())
+            temp_path = str((Path(d) / filename).absolute())
             with open(temp_path, "wb") as f:
                 f.write(content)
                 f.flush()
@@ -85,7 +85,7 @@ class ZoteroAPI:
         old_attachment = self._get_item_by_key(attachment_handle)
         name = old_attachment['data']['title']
         with tempfile.TemporaryDirectory() as d:
-            with open(os.path.join(d, name), "wb") as f:
+            with open(Path(d) / name, "wb") as f:
                 f.write(content)
                 self.zot.delete_item(old_attachment)
                 new_attachment = self.zot.attachment_simple([f.name], parent_handle)
@@ -95,15 +95,7 @@ class ZoteroAPI:
     def list_children(self, handle: str) -> List[TreeNode]:
         """List the children of a collection node.
         """
-        children = self.zot.children(handle)
-
-        return_list = []
-        for child in children:
-            data = child.get("data", {})
-            return_list.append(
-                TreeNode(handle=child['key'], name=data.get('filename', ""), type=data.get('itemType', ''),
-                         tags=data.get('tags', []), path=data.get('path', '')))
-        return return_list
+        return [TreeNode.from_zotero_item(child) for child in self.zot.children(handle)]
 
     def add_tags(self, handle: str, tags: List[str]) -> bool:
         """Add tags to an item."""
@@ -129,26 +121,16 @@ class ZoteroAPI:
         item = self._get_item_by_key(handle)
         if item:
             tags = item.get("data", {}).get("tags", [])
-            return [tag.get("tag", "") for tag in tags if tag.get("tag")]
+            return [tag.get("tag") for tag in tags if tag.get("tag")]
         return []
 
     def has_tags(self, handle: str, tags: List[str]) -> bool:
         """Check if an item has all specified tags."""
-        try:
-            current_tags = self.get_tags(handle)
-            return all(tag in current_tags for tag in tags)
-        except Exception:
-            return False
+        current_tags = self.get_tags(handle)
+        return all(tag in current_tags for tag in tags)
 
     def find_nodes_with_tag(self, tag: str) -> List[TreeNode]:
         """Find all items with a specific tag."""
-        items = self.zot.items(tag=tag)
+        return [TreeNode.from_zotero_item(item) for item in self.zot.items(tag=tag)]
 
-        return_list = []
-        for child in items:
-            data = child.get("data", {})
-            return_list.append(
-                TreeNode(handle=child['key'], name=data.get('filename', ""), type=data.get('itemType', ''),
-                         tags=data.get('tags', []), path=data.get('path', '')))
-        return return_list
 

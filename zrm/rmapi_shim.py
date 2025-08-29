@@ -3,18 +3,13 @@ import os
 import subprocess
 import logging
 import shutil
+from pathlib import Path
 from typing import List
 
 logger = logging.getLogger(__name__)
 
 # First try to find rmapi in current working directory
-current_dir = os.getcwd()
-rmapi_path_in_cwd = os.path.join(current_dir, "rmapi")
-if os.path.isfile(rmapi_path_in_cwd) and os.access(rmapi_path_in_cwd, os.X_OK):
-    rmapi_location = rmapi_path_in_cwd
-else:
-    # If not found in cwd, try system PATH
-    rmapi_location = shutil.which("rmapi")
+rmapi_location = shutil.which("rmapi", path=Path.cwd())
 
 if rmapi_location is None:
     raise FileNotFoundError("Could not find 'rmapi' in current working directory or on your system PATH.")
@@ -29,7 +24,7 @@ def check_rmapi():
     return success
 
 
-def get_children(folder: str) -> bool | List[str]:
+def get_children(folder: str) -> None | List[str]:
     """Get all children in a specific folder."""
     files = subprocess.run([rmapi_location, "ls", folder], capture_output=True, text=True)
     success = files.returncode == 0
@@ -43,9 +38,9 @@ def get_children(folder: str) -> bool | List[str]:
     else:
         logger.info(files.stdout)
         logger.error(files.stderr)
-        return False
+        return None
 
-def get_files(folder: str) -> bool | List[str]:
+def get_files(folder: str) -> None | List[str]:
     # Get all files from a specific folder. Output is sanitized and subfolders are excluded
     files = subprocess.run([rmapi_location, "ls", folder], capture_output=True, text=True)
     success = files.returncode == 0
@@ -59,7 +54,7 @@ def get_files(folder: str) -> bool | List[str]:
     else:
         logger.info(files.stdout)
         logger.error(files.stderr)
-        return False
+        return None
 
 
 def download_file(file_path, working_dir):

@@ -64,9 +64,9 @@ def main():
     argv = sys.argv[1:]
     config_path = Path.cwd() / "config.yml"
     if not config_path.exists():
-        write_config("config.yml")
+        write_config(config_path)
 
-    zot, webdav, folders = load_config("config.yml")
+    zot, webdav, folders = load_config(config_path)
     read_folder = folders['read']
 
     # Initialize filetree adapters
