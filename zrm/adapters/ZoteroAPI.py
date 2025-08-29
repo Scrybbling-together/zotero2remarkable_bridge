@@ -20,12 +20,6 @@ class ZoteroAPI:
             self._item_cache[key] = self.zot.item(key)
         return self._item_cache[key]
 
-    def _get_collection_by_key(self, key: str) -> Optional[Dict]:
-        """Get collection by key with caching."""
-        if key not in self._collection_cache:
-            self._collection_cache[key] = self.zot.collection(key)
-        return self._collection_cache[key]
-
     def _invalidate_cache(self, item_key: str | None = None):
         """Invalidate cache for specific item or all items."""
         if item_key:
