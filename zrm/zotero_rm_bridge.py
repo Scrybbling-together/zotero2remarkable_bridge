@@ -53,7 +53,6 @@ def rmToZot(zotero: ZoteroAPI, rm: ReMarkableAPI, read_folder: str):
                     rendered_pdf = [file for file in os.listdir(temp_path) if file.endswith(" _remarks.pdf")]
                     if rendered_pdf[0]:
                         attach_pdf_to_zotero_document(Path(temp_path) / (rendered_pdf[0]), zotero)
-                        # Delete the file from reMarkable after successful processing
                         if rm.delete_file_or_folder(rm_file_path):
                             logger.info(f"Deleted {rm_filename} from reMarkable after successful sync")
                         else:

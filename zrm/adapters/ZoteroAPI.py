@@ -52,11 +52,11 @@ class ZoteroAPI:
 
                 # Create attachment using Zotero API
                 result = self.zot.attachment_simple([temp_path], handle)
-                if len(result['success']):
+                if result['success']:
                     key = result['success'][0]['key']
                     self._invalidate_cache(handle)
                     return key
-                elif len(result['unchanged']):
+                elif  result['unchanged']:
                     key = result['unchanged'][0]['key']
                     self._invalidate_cache(handle)
                     return key
@@ -102,8 +102,7 @@ class ZoteroAPI:
                 return new_key
 
     def list_children(self, handle: str) -> List[TreeNode]:
-        """List the children of a collection node.
-        """
+        """List the children of a collection node."""
         return [TreeNode.from_zotero_item(child) for child in self.zot.children(handle)]
 
     def add_tags(self, handle: str, tags: List[str]) -> bool:
