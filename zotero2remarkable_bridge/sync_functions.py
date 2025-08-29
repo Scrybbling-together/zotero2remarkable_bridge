@@ -33,7 +33,7 @@ def sync_to_rm(item, zot, folders):
             zot.dump(attachment_id, path=temp_path)
             file_name = temp_path / attachment_name
             if file_name:
-                if rmapi.upload_file(file_name, f"/Zotero/{folders['unread']}"):
+                if rmapi.upload_file(file_name, folders['unread']):
                     zot.add_tags(item, "synced")
                     os.remove(file_name)
                     logger.info(f"Uploaded {attachment_name} to reMarkable.")
@@ -62,7 +62,7 @@ def sync_to_rm_webdav(item, zot, webdav, folders):
                 zf.extractall(unzip_path)
                 zf.extractall(".")
             if (unzip_path / attachment_name).is_file():
-                uploader = rmapi.upload_file(str(unzip_path / attachment_name), f"/Zotero/{folders['unread']}")
+                uploader = rmapi.upload_file(str(unzip_path / attachment_name), folders['unread'])
             else:
                 """ #TODO: Sometimes Zotero does not seem to rename attachments properly,
                     leading to reported file names diverging from the actual one. 
