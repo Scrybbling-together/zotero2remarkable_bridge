@@ -1,3 +1,4 @@
 .direnv/
 result/
 config.yml
+.pre-commit-config.yaml
