@@ -8,6 +8,8 @@ from pprint import pprint
 
 from pyzotero.zotero import Zotero
 
+from webdav3.client import Client as wdClient
+
 import zotero2remarkable_bridge.rmapi_shim as rmapi
 import remarks
 from pathlib import Path
@@ -15,10 +17,13 @@ from shutil import rmtree
 from time import sleep
 from datetime import datetime
 
+from typing import Any, List
+
 logger = logging.getLogger("zotero_rM_bridge.sync_functions")
 
 
-def sync_to_rm(item, zot, folders):
+def sync_to_rm(item: Any, zot: Zotero, folders: Any):
+    """Sync items from Zotero to Remarkable"""
     temp_path = Path(tempfile.gettempdir())
     item_id = item["key"]
     attachments = zot.children(item_id)
@@ -43,7 +48,8 @@ def sync_to_rm(item, zot, folders):
             logger.warning("Found attachment, but it's not a PDF, skipping...")
 
 
-def sync_to_rm_webdav(item, zot, webdav, folders):
+def sync_to_rm_webdav(item: Any, zot: Zotero, webdav: wdClient, folders: Any):
+    """Sync items from Zotero to Remarkable using WebDAV"""
     temp_path = Path(tempfile.gettempdir())
     item_id = item["key"]
     attachments = zot.children(item_id)
@@ -65,7 +71,7 @@ def sync_to_rm_webdav(item, zot, webdav, folders):
                 uploader = rmapi.upload_file(str(unzip_path / attachment_name), f"/Zotero/{folders['unread']}")
             else:
                 """ #TODO: Sometimes Zotero does not seem to rename attachments properly,
-                    leading to reported file names diverging from the actual one. 
+                    leading to reported file names diverging from the actual one.
                     To prevent this from stopping the whole program due to missing
                     file errors, skip that file. Probably it could be worked around better though."""
                 logger.warning(
@@ -83,6 +89,7 @@ def sync_to_rm_webdav(item, zot, webdav, folders):
 
 
 def download_from_rm(entity: str, folder: str) -> Path:
+    """Download item from Remarkable"""
     temp_path = Path(tempfile.gettempdir())
     logger.info(f"Processing {entity}...")
     zip_name = f"{entity}.rmdoc"
@@ -111,6 +118,7 @@ def download_from_rm(entity: str, folder: str) -> Path:
 
 
 def zotero_upload(pdf_path: Path, zot: Zotero):
+    """Upload PDF to Zotero"""
     md_name = f"{pdf_path.stem} _obsidian.md"
     md_path = pdf_path.with_name(md_name)
 
@@ -146,6 +154,7 @@ def zotero_upload(pdf_path: Path, zot: Zotero):
 
 
 def get_md5(pdf) -> None | str:
+    """Get MD5 for pdf file"""
     if pdf.is_file():
         with open(pdf, "rb") as f:
             return hashlib.md5(f.read()).hexdigest()
@@ -153,10 +162,12 @@ def get_md5(pdf) -> None | str:
 
 
 def get_mtime() -> str:
+    """Generate mtime corresponding to current time"""
     return datetime.now().strftime('%s')
 
 
-def fill_template(item_template, pdf_name):
+def fill_template(item_template: Any, pdf_name: Any) -> Any:
+    """Fill an item template for upload to Zotero"""
     item_template["title"] = pdf_name.stem
     item_template["filename"] = pdf_name.name
     item_template["md5"] = get_md5(pdf_name)
@@ -164,7 +175,8 @@ def fill_template(item_template, pdf_name):
     return item_template
 
 
-def webdav_uploader(webdav, remote_path, local_path):
+def webdav_uploader(webdav: wdClient, remote_path: str, local_path: Path) -> bool:
+    """Upload a file using WebDAV"""
     for i in range(3):
         try:
             webdav.upload_sync(remote_path=remote_path, local_path=local_path)
@@ -176,7 +188,8 @@ def webdav_uploader(webdav, remote_path, local_path):
         return False
 
 
-def zotero_upload_webdav(pdf_name, zot, webdav):
+def zotero_upload_webdav(pdf_name: Path, zot: Zotero, webdav: wdClient) -> Path | None:
+    """Upload a pdf file to Zotero using WebDAV, creating the attachment if needed"""
     temp_path = Path(tempfile.gettempdir())
     item_template = zot.item_template("attachment", "imported_file")
     for item in zot.items(tag=["synced", "-read"]):
@@ -209,7 +222,7 @@ def zotero_upload_webdav(pdf_name, zot, webdav):
                     continue
 
                 """For the file to be properly recognized in Zotero, a propfile needs to be
-                uploaded to the same folder with the same ID. The content needs 
+                uploaded to the same folder with the same ID. The content needs
                 to match exactly Zotero's format."""
                 propfile_content = f'<properties version="1"><mtime>{item_template["mtime"]}</mtime><hash>{item_template["md5"]}</hash></properties>'
                 propfile = temp_path / f"{key}.prop"
@@ -235,7 +248,8 @@ def zotero_upload_webdav(pdf_name, zot, webdav):
     return None
 
 
-def get_sync_status(zot):
+def get_sync_status(zot: Zotero) -> List[Any]:
+    """Get the list of synced items"""
     read_list = []
     for item in zot.items(tag="read"):
         for attachment in zot.children(item["key"]):
