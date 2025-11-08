@@ -13,6 +13,7 @@ logger.addHandler(logging.StreamHandler())
 logger.addHandler(logging.FileHandler(filename="sync.log"))
 
 def push(zot: Zotero, webdav: bool, folders):
+    """Push items from Zotero to reMarkable"""
     logger.info("Syncing from Zotero to reMarkable")
     sync_items = zot.items(tag="to_sync")
     if sync_items:
@@ -28,6 +29,7 @@ def push(zot: Zotero, webdav: bool, folders):
 
 
 def pull(zot: Zotero, webdav: bool, read_folder: str):
+    """Pull items from reMarkable to Zotero"""
     logger.info("Syncing from reMarkable to Zotero")
     files_list = rmapi.get_files(read_folder)
     if files_list:
@@ -50,7 +52,7 @@ def main():
 
     zot, webdav, folders = load_config("config.yml")
     read_folder = f"/Zotero/{folders['read']}/"
-    
+
     try:
         opts, args = getopt.getopt(argv, "m:")
     except getopt.GetoptError:
@@ -79,7 +81,7 @@ def main():
                     sys.exit()
     except Exception as e:
         logger.exception(e)
-        
+
 
 if __name__ == "__main__":
     main()

@@ -24,7 +24,7 @@
         p2n = poetry2nix.lib.mkPoetry2Nix { inherit pkgs; };
 
         zot_x_rm = p2n.mkPoetryApplication {
-          buildInputs = [pkgs.inkscape];
+          buildInputs = [ pkgs.inkscape ];
 
           projectDir = ./.;
           preferWheels = true;
@@ -44,8 +44,12 @@
         devShells.default = pkgs.mkShell {
           buildInputs = [
             pkgs.rmapi
+            pkgs.mypy
             pkgs.poetry
             zot_x_rm
+
+            pkgs.python3Packages.types-pyyaml
+            pkgs.python3Packages.types-tqdm
           ];
         };
         packages.default = zot_x_rm;

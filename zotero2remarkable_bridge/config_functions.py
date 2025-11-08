@@ -5,9 +5,12 @@ import yaml
 from pyzotero import zotero
 from webdav3.client import Client as wdClient
 
+from typing import Tuple
+
 logger = logging.getLogger("zotero_rM_bridge.config")
 
-def load_config(config_file):
+def load_config(config_file: str) -> Tuple[zotero.Zotero, wdClient, dict]:
+    """Loads configuration from 'config_file'"""
     with open(config_file, "r") as stream:
         try:
             config_dict = yaml.safe_load(stream)
@@ -28,7 +31,8 @@ def load_config(config_file):
     return zot, webdav, folders
 
 
-def write_config(file_name):
+def write_config(file_name: str):
+    """Writes a sample config file"""
     config_data = {}
     input("Couldn't find config file. Let's create one! Press Enter to continue...\n")
     print("On your ReMarkable you should have created a folder called Zotero in the root directory.\nIn the following specify ONLY the names of the subfolders, e. g 'read' instead of 'zotero/read'.\n")
@@ -58,7 +62,7 @@ def write_config(file_name):
 
 def normalize_rm_path(folder_name: str) -> str:
     """Performs cleanup of folder names, mainly for cases like 'Zotero/read' which should just be 'read'"""
-    match folder_name:        
+    match folder_name:
         case str(s) if s.startswith("/") or s.startswith(" "):
             return normalize_rm_path(s[1:]) # recursively removes all leading slashes and whitespaces
         case str(s) if s.endswith(" "):
