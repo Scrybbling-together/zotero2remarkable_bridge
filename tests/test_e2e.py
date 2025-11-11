@@ -1,6 +1,7 @@
 """
 Tests that use a real reMarkable and Zotero account for highest certainty that the script actually works.
 """
+
 import logging
 
 import pytest
@@ -15,6 +16,7 @@ VALID_RM_DOCUMENT = "tests/on computable numbers - RMPP - highlighter tool v6.rm
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @pytest.mark.e2e
 def test_sync_round_trip_real():
     zot, webdav, folders = load_config("config.yml")
@@ -25,16 +27,18 @@ def test_sync_round_trip_real():
 
     handle = zotero_tree.create_item([paper_name])
 
-    with open("1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf", "rb") as f:
+    with open(
+        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
+        "rb",
+    ) as f:
         pdf_content = f.read()
     zotero_tree.create_file(handle, "On computable numbers.pdf", pdf_content)
     zotero_tree.add_tags(handle, ["to_sync"])
 
     assert "synced" not in zotero_tree.get_tags(handle)
-    zotToRm(zotero=zotero_tree, rm=rm_tree, folders={
-        "unread": "unread",
-        "read": "read"
-    })
+    zotToRm(
+        zotero=zotero_tree, rm=rm_tree, folders={"unread": "unread", "read": "read"}
+    )
 
     assert zotero_tree.has_tags(handle, ["synced"])
     assert rm_tree.is_file("Zotero/unread/" + paper_name + ".pdf")
@@ -51,4 +55,3 @@ def test_sync_round_trip_real():
     assert len(children) == 2
     for child in children:
         assert "annotated" in zotero_tree.get_tags(child.handle)
-

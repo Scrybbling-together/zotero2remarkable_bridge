@@ -15,13 +15,16 @@ from zrm.adapters.ZoteroAPI import ZoteroAPI
 from zrm.sync_functions import sync_to_rm_filetree, attach_pdf_to_zotero_document
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(), logging.FileHandler(filename="sync.log")])
+logging.basicConfig(
+    level=logging.INFO,
+    handlers=[logging.StreamHandler(), logging.FileHandler(filename="sync.log")],
+)
 
 
 def zotToRm(zotero: ZoteroAPI, rm: ReMarkableAPI, folders):
     """Push files from Zotero to reMarkable."""
     logger.info("Syncing from Zotero to reMarkable")
-    
+
     sync_items = zotero.find_nodes_with_tag("to_sync")
 
     if sync_items:
@@ -40,7 +43,9 @@ def rmToZot(zotero: ZoteroAPI, rm: ReMarkableAPI, read_folder: str):
         files_list = rm.list_children(rm_folder_path)
 
         if files_list:
-            logger.info(f"There are {len(files_list)} files to download from the reMarkable")
+            logger.info(
+                f"There are {len(files_list)} files to download from the reMarkable"
+            )
             for rm_filename in tqdm(files_list):
                 rm_file_path = os.path.join(rm_folder_path, rm_filename)
                 content = rm.get_file_content(rm_file_path)
@@ -50,13 +55,23 @@ def rmToZot(zotero: ZoteroAPI, rm: ReMarkableAPI, read_folder: str):
                         f.write(content)
 
                     remarks.run_remarks(rmn_path, temp_path)
-                    rendered_pdf = [file for file in os.listdir(temp_path) if file.endswith(" _remarks.pdf")]
+                    rendered_pdf = [
+                        file
+                        for file in os.listdir(temp_path)
+                        if file.endswith(" _remarks.pdf")
+                    ]
                     if rendered_pdf[0]:
-                        attach_pdf_to_zotero_document(Path(temp_path) / (rendered_pdf[0]), zotero)
+                        attach_pdf_to_zotero_document(
+                            Path(temp_path) / (rendered_pdf[0]), zotero
+                        )
                         if rm.delete_file_or_folder(rm_file_path):
-                            logger.info(f"Deleted {rm_filename} from reMarkable after successful sync")
+                            logger.info(
+                                f"Deleted {rm_filename} from reMarkable after successful sync"
+                            )
                         else:
-                            logger.warning(f"Failed to delete {rm_filename} from reMarkable")
+                            logger.warning(
+                                f"Failed to delete {rm_filename} from reMarkable"
+                            )
                     else:
                         logging.error("Was unable to find the processed pdf")
         else:
@@ -72,7 +87,7 @@ def main():
         write_config(config_path)
 
     zot, webdav, folders = load_config(config_path)
-    read_folder = folders['read']
+    read_folder = folders["read"]
 
     # Initialize filetree adapters
     try:
