@@ -5,7 +5,7 @@ import yaml
 from pyzotero import zotero
 from webdav3.client import Client as wdClient
 
-logger = logging.getLogger("zotero_rM_bridge.config")
+logger = logging.getLogger(__name__)
 
 def load_config(config_file):
     with open(config_file, "r") as stream:
@@ -64,6 +64,6 @@ def normalize_rm_path(folder_name: str) -> str:
         case str(s) if s.endswith(" "):
             return normalize_rm_path(s[:-1]) # recursively removes trailing whitespace
         case str(s) if s.lower().startswith("zotero/"):
-            return s[7:] # removes "zotero/" (case insensitive)
+            return s[len("zotero/"):]
         case _:
             return folder_name

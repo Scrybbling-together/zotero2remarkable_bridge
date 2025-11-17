@@ -1,4 +1,4 @@
-from zotero2remarkable_bridge.config_functions import normalize_rm_path
+from zrm.config_functions import normalize_rm_path
 
 def test_normalize_rm_path():
     assert normalize_rm_path("") == ""

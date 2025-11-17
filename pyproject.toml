@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "zotero2remarkable-bridge"
+name = "zrm"
 version = "0.1.0"
 description = "Sync Zotero attachments back-and-forth with your ReMarkable tablet"
 authors = ["Laura Brekelmans <mail@laura.fm>"]
@@ -15,10 +15,17 @@ webdavclient3 = "^3.14.6"
 pyzotero = "^1.6.11"
 remarks = { git = "https://github.com/Scrybbling-together/remarks", branch = "main" }
 jinja2 = "^3.1.6"
+pytest = "^8.0.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
-zotero2remarkable-bridge = "zotero2remarkable_bridge.zotero2remarkable_bridge:main"
+zrm = "zrm.zotero_rm_bridge:main"
+
+[tool.pytest.ini_options]
+markers = [
+    "e2e: end-to-end tests with real reMarkable and Zotero accounts",
+    "mock: fast unit tests using mock APIs"
+]
