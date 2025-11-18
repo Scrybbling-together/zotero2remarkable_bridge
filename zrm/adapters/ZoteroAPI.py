@@ -34,7 +34,7 @@ class ZoteroAPI:
         item_template["title"] = path[0]
         result = self.zot.create_items([item_template])
         self._invalidate_cache()
-        return result['successful']['0']['key']
+        return result["successful"]["0"]["key"]
 
     def create_file(self, handle: str, filename: str, content: bytes) -> str:
         """Create a file attachment"""
@@ -46,12 +46,12 @@ class ZoteroAPI:
 
                 # Create attachment using Zotero API
                 result = self.zot.attachment_simple([temp_path], handle)
-                if result['success']:
-                    key = result['success'][0]['key']
+                if result["success"]:
+                    key = result["success"][0]["key"]
                     self._invalidate_cache(handle)
                     return key
-                elif  result['unchanged']:
-                    key = result['unchanged'][0]['key']
+                elif result["unchanged"]:
+                    key = result["unchanged"][0]["key"]
                     self._invalidate_cache(handle)
                     return key
 
@@ -74,23 +74,27 @@ class ZoteroAPI:
                     return f.read()
             return None
 
-    def update_file_content(self, parent_handle: str, attachment_handle: str, content: bytes) -> str:
+    def update_file_content(
+        self, parent_handle: str, attachment_handle: str, content: bytes
+    ) -> str:
         """Update the content of an existing file attachment."""
         old_attachment = self._get_item_by_key(attachment_handle)
-        name = old_attachment['data']['title']
+        name = old_attachment["data"]["title"]
         with tempfile.TemporaryDirectory() as d:
             with open(Path(d) / name, "wb") as f:
                 f.write(content)
                 self.zot.delete_item(old_attachment)
                 new_attachment = self.zot.attachment_simple([f.name], parent_handle)
-                old_key = old_attachment['data']['key']
+                old_key = old_attachment["data"]["key"]
                 self._invalidate_cache(old_key)
-                if new_attachment['success']:
-                    new_key = new_attachment['success'][0]['key']
-                elif new_attachment['unchanged']:
-                    new_key = new_attachment['unchanged'][0]['key']
+                if new_attachment["success"]:
+                    new_key = new_attachment["success"][0]["key"]
+                elif new_attachment["unchanged"]:
+                    new_key = new_attachment["unchanged"][0]["key"]
                 else:
-                    raise RuntimeError(f"Was unable to find the key in the updated attachment: {new_attachment}")
+                    raise RuntimeError(
+                        f"Was unable to find the key in the updated attachment: {new_attachment}"
+                    )
                 return new_key
 
     def list_children(self, handle: str) -> List[TreeNode]:
@@ -132,5 +136,3 @@ class ZoteroAPI:
     def find_nodes_with_tag(self, tag: str) -> List[TreeNode]:
         """Find all items with a specific tag."""
         return [TreeNode.from_zotero_item(item) for item in self.zot.items(tag=tag)]
-
-

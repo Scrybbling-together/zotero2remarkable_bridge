@@ -67,9 +67,9 @@ class ReMarkableAPI:
         """Check if the path represents a file."""
         if not path:
             return False
-            
+
         return self.file_or_folder_exists(path) and not self.is_folder(path)
-    
+
     def get_file_content(self, path: str) -> bytes:
         """Download and return file content."""
         try:
@@ -80,16 +80,18 @@ class ReMarkableAPI:
                 success = rmapi.download_file(path, temp_dir)
                 if not success:
                     raise FileNotFoundError(f"Failed to download file from {path}")
-                
+
                 # Find the downloaded file
                 temp_path = Path(temp_dir)
                 files = list(temp_path.glob("*"))
                 if not files:
-                    raise FileNotFoundError(f"No files found after download from {path}")
-                
+                    raise FileNotFoundError(
+                        f"No files found after download from {path}"
+                    )
+
                 with open(files[0], "rb") as f:
                     return f.read()
-                    
+
         except Exception as e:
             raise FileNotFoundError(f"Could not retrieve file content: {str(e)}")
 
