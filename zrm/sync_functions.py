@@ -135,7 +135,7 @@ def zotero_upload_webdav(pdf_name, zot, webdav):
                     continue
 
                 """For the file to be properly recognized in Zotero, a propfile needs to be
-                uploaded to the same folder with the same ID. The content needs 
+                uploaded to the same folder with the same ID. The content needs
                 to match exactly Zotero's format."""
                 propfile_content = f'<properties version="1"><mtime>{item_template["mtime"]}</mtime><hash>{item_template["md5"]}</hash></properties>'
                 propfile = temp_path / f"{key}.prop"
@@ -182,13 +182,18 @@ def sync_to_rm_filetree(
 
         try:
             content = zotero_tree.get_file_content(attachment.handle)
-            if rm_tree.upload_file(
-                os.path.join("Zotero", folders["unread"], attachment.name), content
-            ):
-                logger.info(f"Uploaded {attachment} to reMarkable.")
+            if content is None:
+                raise RuntimeError(
+                    f"Could not get file content for attachment {attachment.handle}"
+                )
             else:
-                all_attachments_synced = False
-                logger.error(f"Failed to upload {attachment} to reMarkable.")
+                if rm_tree.upload_file(
+                    os.path.join("Zotero", folders["unread"], attachment.name), content
+                ):
+                    logger.info(f"Uploaded {attachment} to reMarkable.")
+                else:
+                    all_attachments_synced = False
+                    logger.error(f"Failed to upload {attachment} to reMarkable.")
         except Exception as e:
             all_attachments_synced = False
             logger.error(f"Error processing {attachment}: {str(e)}")
@@ -266,7 +271,7 @@ def attach_pdf_to_zotero_document(rendered_remarks_pdf: Path, zotero_tree: Zoter
                     )
                 else:
                     logger.warning(
-                        f"Was unable to attach {md_attachment.name} MD to Zotero entry '{document_name}#{entry.handle}'"
+                        f"Was unable to attach {document_name} MD to Zotero entry '{document_name}#{entry.handle}'"
                     )
             return
 
