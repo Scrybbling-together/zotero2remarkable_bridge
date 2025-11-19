@@ -54,7 +54,7 @@ def rmToZot(zotero: ZoteroAPI, rm: ReMarkableAPI, read_folder: str):
                     with open(rmn_path, "wb") as f:
                         f.write(content)
 
-                    remarks.run_remarks(rmn_path, temp_path)
+                    remarks.run_remarks(Path(rmn_path), Path(temp_path))
                     rendered_pdf = [
                         file
                         for file in os.listdir(temp_path)
