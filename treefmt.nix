@@ -5,7 +5,7 @@
     nixfmt.enable = true;
     black.enable = true;
     mypy = {
-      enable = false;
+      enable = true;
       directories = {
         src = {
           directory = "zrm";

@@ -5,11 +5,18 @@ import logging
 import shutil
 from pathlib import Path
 from typing import List
+from functools import cache
 
 logger = logging.getLogger(__name__)
 
-# First try to find rmapi in current working directory
-rmapi_location = shutil.which("rmapi", path=Path.cwd())
+
+@cache
+def get_rmapi_location() -> str:
+    """Get rmapi location or raise error"""
+    location = shutil.which("rmapi") or shutil.which("./rmapi")
+    if location is None:
+        raise FileNotFoundError("Could not find 'rmapi' on your system PATH.")
+    return location
 
 
 def run_rmapi_command(
@@ -17,19 +24,13 @@ def run_rmapi_command(
 ) -> tuple[bool, subprocess.CompletedProcess]:
     """Run rmapi command and handle common success/failure logging."""
     result = subprocess.run(
-        [rmapi_location] + args, capture_output=True, text=True, **kwargs
+        [get_rmapi_location()] + args, capture_output=True, text=True, **kwargs
     )
     success = result.returncode == 0
     if not success:
         logger.info(result.stdout)
         logger.error(result.stderr)
     return success, result
-
-
-if rmapi_location is None:
-    raise FileNotFoundError(
-        "Could not find 'rmapi' in current working directory or on your system PATH."
-    )
 
 
 def check_rmapi():

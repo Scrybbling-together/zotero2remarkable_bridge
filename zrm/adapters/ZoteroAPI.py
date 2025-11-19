@@ -11,8 +11,8 @@ from zrm.adapters.TreeNode import TreeNode
 class ZoteroAPI:
     def __init__(self, zotero_client: Zotero):
         self.zot = zotero_client
-        self._item_cache = {}
-        self._collection_cache = {}
+        self._item_cache: dict[str, Dict] = {}
+        self._collection_cache: dict[Any, Any] = {}
 
     def _get_item_by_key(self, key: str) -> Optional[Dict]:
         """Get item by key with caching."""
@@ -79,23 +79,26 @@ class ZoteroAPI:
     ) -> str:
         """Update the content of an existing file attachment."""
         old_attachment = self._get_item_by_key(attachment_handle)
-        name = old_attachment["data"]["title"]
-        with tempfile.TemporaryDirectory() as d:
-            with open(Path(d) / name, "wb") as f:
-                f.write(content)
-                self.zot.delete_item(old_attachment)
-                new_attachment = self.zot.attachment_simple([f.name], parent_handle)
-                old_key = old_attachment["data"]["key"]
-                self._invalidate_cache(old_key)
-                if new_attachment["success"]:
-                    new_key = new_attachment["success"][0]["key"]
-                elif new_attachment["unchanged"]:
-                    new_key = new_attachment["unchanged"][0]["key"]
-                else:
-                    raise RuntimeError(
-                        f"Was unable to find the key in the updated attachment: {new_attachment}"
-                    )
-                return new_key
+        if old_attachment is None:
+            raise RuntimeError(f"Was unable to find attachment {attachment_handle}")
+        else:
+            name = old_attachment["data"]["title"]
+            with tempfile.TemporaryDirectory() as d:
+                with open(Path(d) / name, "wb") as f:
+                    f.write(content)
+                    self.zot.delete_item(old_attachment)
+                    new_attachment = self.zot.attachment_simple([f.name], parent_handle)
+                    old_key = old_attachment["data"]["key"]
+                    self._invalidate_cache(old_key)
+                    if new_attachment["success"]:
+                        new_key = new_attachment["success"][0]["key"]
+                    elif new_attachment["unchanged"]:
+                        new_key = new_attachment["unchanged"][0]["key"]
+                    else:
+                        raise RuntimeError(
+                            f"Was unable to find the key in the updated attachment: {new_attachment}"
+                        )
+                    return new_key
 
     def list_children(self, handle: str) -> List[TreeNode]:
         """List the children of a collection node."""
