@@ -29,3 +29,6 @@ markers = [
     "e2e: end-to-end tests with real reMarkable and Zotero accounts",
     "mock: fast unit tests using mock APIs"
 ]
+
+[tool.mypy]
+mypy_path = "typings"

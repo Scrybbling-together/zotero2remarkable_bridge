@@ -20,8 +20,8 @@ class ReMarkableAPI:
             if len(path) < 1:
                 return False
 
-            path = Path(path)
-            filename = path.name
+            actual_path = Path(path)
+            filename = actual_path.name
 
             with tempfile.TemporaryDirectory() as d:
                 with open(str(Path(d) / filename), "wb") as f:
@@ -29,7 +29,7 @@ class ReMarkableAPI:
                     f.flush()
 
                     try:
-                        success = rmapi.upload_file(f.name, str(path.parent))
+                        success = rmapi.upload_file(f.name, str(actual_path.parent))
                         return success
                     except Exception as e:
                         logger.error(e)
@@ -41,17 +41,17 @@ class ReMarkableAPI:
 
     def file_or_folder_exists(self, path: str) -> bool:
         """Check if a file or folder exists."""
-        path = Path(path)
+        actual_path = Path(path)
 
-        d = str(path.parent)
-        if not path:
+        d = str(actual_path.parent)
+        if not actual_path:
             # Root always exists
             return True
 
         files = rmapi.get_children(d)
 
         if files:
-            return path.name.removesuffix(".pdf") in files
+            return actual_path.name.removesuffix(".pdf") in files
 
         return False
 
@@ -67,9 +67,9 @@ class ReMarkableAPI:
         """Check if the path represents a file."""
         if not path:
             return False
-            
+
         return self.file_or_folder_exists(path) and not self.is_folder(path)
-    
+
     def get_file_content(self, path: str) -> bytes:
         """Download and return file content."""
         try:
@@ -80,16 +80,18 @@ class ReMarkableAPI:
                 success = rmapi.download_file(path, temp_dir)
                 if not success:
                     raise FileNotFoundError(f"Failed to download file from {path}")
-                
+
                 # Find the downloaded file
                 temp_path = Path(temp_dir)
                 files = list(temp_path.glob("*"))
                 if not files:
-                    raise FileNotFoundError(f"No files found after download from {path}")
-                
+                    raise FileNotFoundError(
+                        f"No files found after download from {path}"
+                    )
+
                 with open(files[0], "rb") as f:
                     return f.read()
-                    
+
         except Exception as e:
             raise FileNotFoundError(f"Could not retrieve file content: {str(e)}")
 
