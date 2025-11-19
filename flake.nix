@@ -78,7 +78,7 @@
               };
             };
           };
-          formatting = treefmtEval.${system}.config.build.check self;
+          formatting = treefmtEval.config.build.check self;
         };
         devShells.default =
           let
@@ -86,14 +86,21 @@
           in
           pkgs.mkShell {
             inherit shellHook;
-            buildInputs = [
-              pkgs.rmapi
-              pkgs.poetry
-              pkgs.zotero
-              zot_x_rm
+            buildInputs =
+              [
+                pkgs.rmapi
+                pkgs.poetry
+                pkgs.zotero
+                zot_x_rm
 
-              treefmtEval.config.build.wrapper
-            ] ++ enabledPackages;
+                treefmtEval.config.build.wrapper
+
+              ]
+              ++ (with pkgs.python3Packages; [
+                types-pyyaml
+                types-tqdm
+              ])
+              ++ enabledPackages;
           };
         packages.default = zot_x_rm;
       }

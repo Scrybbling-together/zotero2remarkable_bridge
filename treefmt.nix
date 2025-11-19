@@ -8,7 +8,10 @@
       enable = true;
       directories = {
         src = {
-          directory = "zrm";
+          directory = "";
+          modules = [
+            "zrm"
+          ];
           extraPythonPackages = with pkgs.python3Packages; [
             types-pyyaml
             types-tqdm
