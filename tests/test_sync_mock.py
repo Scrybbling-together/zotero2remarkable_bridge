@@ -30,10 +30,7 @@ def test_sync_round_trip_mock():
     handle = mock_zotero.create_item([paper_name])
 
     # Step 2: Create file attachment
-    with open(
-        TEST_PDF,
-        "rb",
-    ) as f:
+    with open(TEST_PDF, "rb") as f:
         pdf_content = f.read()
     mock_zotero.create_file(handle, "On computable numbers.pdf", pdf_content)
     mock_zotero.add_tags(handle, ["to_sync"])
