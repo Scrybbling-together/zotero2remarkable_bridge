@@ -20,8 +20,8 @@ class ReMarkableAPI:
             if len(path) < 1:
                 return False
 
-            path = Path(path)
-            filename = path.name
+            actual_path = Path(path)
+            filename = actual_path.name
 
             with tempfile.TemporaryDirectory() as d:
                 with open(str(Path(d) / filename), "wb") as f:
@@ -29,7 +29,7 @@ class ReMarkableAPI:
                     f.flush()
 
                     try:
-                        success = rmapi.upload_file(f.name, str(path.parent))
+                        success = rmapi.upload_file(f.name, str(actual_path.parent))
                         return success
                     except Exception as e:
                         logger.error(e)
@@ -41,17 +41,17 @@ class ReMarkableAPI:
 
     def file_or_folder_exists(self, path: str) -> bool:
         """Check if a file or folder exists."""
-        path = Path(path)
+        actual_path = Path(path)
 
-        d = str(path.parent)
-        if not path:
+        d = str(actual_path.parent)
+        if not actual_path:
             # Root always exists
             return True
 
         files = rmapi.get_children(d)
 
         if files:
-            return path.name.removesuffix(".pdf") in files
+            return actual_path.name.removesuffix(".pdf") in files
 
         return False
 
