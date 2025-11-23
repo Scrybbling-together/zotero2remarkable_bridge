@@ -12,17 +12,24 @@ logger = logging.getLogger(__name__)
 rmapi_location = shutil.which("rmapi", path=Path.cwd())
 
 
-def run_rmapi_command(args: List[str], **kwargs) -> tuple[bool, subprocess.CompletedProcess]:
+def run_rmapi_command(
+    args: List[str], **kwargs
+) -> tuple[bool, subprocess.CompletedProcess]:
     """Run rmapi command and handle common success/failure logging."""
-    result = subprocess.run([rmapi_location] + args, capture_output=True, text=True, **kwargs)
+    result = subprocess.run(
+        [rmapi_location] + args, capture_output=True, text=True, **kwargs
+    )
     success = result.returncode == 0
     if not success:
         logger.info(result.stdout)
         logger.error(result.stderr)
     return success, result
 
+
 if rmapi_location is None:
-    raise FileNotFoundError("Could not find 'rmapi' in current working directory or on your system PATH.")
+    raise FileNotFoundError(
+        "Could not find 'rmapi' in current working directory or on your system PATH."
+    )
 
 
 def check_rmapi():
@@ -38,12 +45,17 @@ def get_children(folder: str) -> None | List[str]:
         children_list_new = []
         for file in children_list:
             if file.startswith(" Time"):
-                logger.warning(f"Child `{file}` starts with ` Time` construct. What does this mean?")
-                logger.warning(f"Full output of `rmapi ls` for context, {result.stdout}")
+                logger.warning(
+                    f"Child `{file}` starts with ` Time` construct. What does this mean?"
+                )
+                logger.warning(
+                    f"Full output of `rmapi ls` for context, {result.stdout}"
+                )
             if file:
                 children_list_new.append(file.split("\t", 1)[1])
         return children_list_new
     return None
+
 
 def get_files(folder: str) -> None | List[str]:
     # Get all files from a specific folder. Output is sanitized and subfolders are excluded
@@ -53,10 +65,14 @@ def get_files(folder: str) -> None | List[str]:
         files_list_new = []
         for file in files_list:
             if file.startswith(" Time"):
-                logger.warning(f"File `{file}` starts with ` Time` construct. What does this mean?")
-                logger.warning(f"Full output of `rmapi ls` for context, {result.stdout}")
+                logger.warning(
+                    f"File `{file}` starts with ` Time` construct. What does this mean?"
+                )
+                logger.warning(
+                    f"Full output of `rmapi ls` for context, {result.stdout}"
+                )
             if file.startswith("[f]\t"):
-                files_list_new.append(file[len("[f]\t"):])
+                files_list_new.append(file[len("[f]\t") :])
         return files_list_new
     return None
 
@@ -67,7 +83,6 @@ def download_file(file_path, working_dir):
     return success
 
 
-
 def upload_file(file_path, target_folder):
     # Upload a file to its destination folder
     success, result = run_rmapi_command(["put", file_path, target_folder])
@@ -75,9 +90,10 @@ def upload_file(file_path, target_folder):
         # Check if failure was due to existing file
         if "entry already exists" in result.stderr:
             from pathlib import Path
+
             filename = Path(file_path).stem  # filename without extension
             full_remote_path = f"{target_folder}/{filename}"
-            
+
             logger.info(f"File already exists, deleting and retrying upload...")
             # Try to delete the existing file
             if delete_file(full_remote_path):

@@ -1,5 +1,6 @@
 from zrm.config_functions import normalize_rm_path
 
+
 def test_normalize_rm_path():
     assert normalize_rm_path("") == ""
     assert normalize_rm_path("read") == "read"
