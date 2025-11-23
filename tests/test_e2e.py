@@ -12,6 +12,7 @@ from zrm.adapters.ZoteroAPI import ZoteroAPI
 from zrm.zotero_rm_bridge import zotToRm, rmToZot
 
 VALID_RM_DOCUMENT = "tests/on computable numbers - RMPP - highlighter tool v6.rmn"
+TEST_PDF = "tests/On computable numbers - Turing.pdf"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ def test_sync_round_trip_real():
     handle = zotero_tree.create_item([paper_name])
 
     with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
+        TEST_PDF,
         "rb",
     ) as f:
         pdf_content = f.read()

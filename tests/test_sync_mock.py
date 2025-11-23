@@ -11,6 +11,8 @@ from zrm.zotero_rm_bridge import zotToRm, rmToZot
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+TEST_PDF = "tests/On computable numbers - Turing.pdf"
+
 
 @pytest.mark.mock
 def test_sync_round_trip_mock():
@@ -29,7 +31,7 @@ def test_sync_round_trip_mock():
 
     # Step 2: Create file attachment
     with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
+        TEST_PDF,
         "rb",
     ) as f:
         pdf_content = f.read()
@@ -88,7 +90,7 @@ def test_multiple_pdfs_in_one_collection():
     # Create multiple PDF attachments
     pdf_files = ["paper1.pdf", "paper2.pdf", "paper3.pdf"]
     with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
+        TEST_PDF,
         "rb",
     ) as f:
         pdf_content = f.read()
@@ -123,7 +125,7 @@ def test_multiple_collections_sync_independently():
     item_handles = []
 
     with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
+        TEST_PDF,
         "rb",
     ) as f:
         pdf_content = f.read()
@@ -163,7 +165,7 @@ def test_missing_unread_folder_warns_and_fails(caplog):
     mock_zotero.add_tags(item_handle, ["to_sync"])
 
     with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
+        TEST_PDF,
         "rb",
     ) as f:
         pdf_content = f.read()
@@ -223,7 +225,7 @@ def test_remarkable_api_unavailable_preserves_tags(caplog):
     mock_zotero.add_tags(item_handle, ["to_sync"])
 
     with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
+        TEST_PDF,
         "rb",
     ) as f:
         pdf_content = f.read()
@@ -268,7 +270,7 @@ def test_duplicate_file_overwrites(caplog):
     mock_zotero.add_tags(item_handle, ["to_sync"])
 
     with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
+        TEST_PDF,
         "rb",
     ) as f:
         pdf_content = f.read()
@@ -331,7 +333,7 @@ def test_rmToZot_updates_existing_markdown_attachment():
 
     # Create existing PDF attachment
     with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
+        TEST_PDF,
         "rb",
     ) as f:
         pdf_content = f.read()
@@ -380,7 +382,7 @@ def test_rmToZot_deletes_files_after_successful_sync():
 
     # Create existing PDF attachment
     with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
+        TEST_PDF,
         "rb",
     ) as f:
         pdf_content = f.read()
