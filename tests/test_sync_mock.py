@@ -11,6 +11,9 @@ from zrm.zotero_rm_bridge import zotToRm, rmToZot
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+TEST_PDF = "tests/On computable numbers - Turing.pdf"
+VALID_RM_DOCUMENT = "tests/on computable numbers - RMPP - highlighter tool v6.rmn"
+
 
 @pytest.mark.mock
 def test_sync_round_trip_mock():
@@ -28,10 +31,7 @@ def test_sync_round_trip_mock():
     handle = mock_zotero.create_item([paper_name])
 
     # Step 2: Create file attachment
-    with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
-        "rb",
-    ) as f:
+    with open(TEST_PDF, "rb") as f:
         pdf_content = f.read()
     mock_zotero.create_file(handle, "On computable numbers.pdf", pdf_content)
     mock_zotero.add_tags(handle, ["to_sync"])
@@ -52,9 +52,7 @@ def test_sync_round_trip_mock():
     assert mock_rm.delete_file_or_folder("Zotero/unread/On computable numbers.pdf")
 
     # When we download from reMarkable, we get the rmDoc (which contains the PDF + annotations)
-    with open(
-        "tests/on computable numbers - RMPP - highlighter tool v6.rmn", "rb"
-    ) as f:
+    with open(VALID_RM_DOCUMENT, "rb") as f:
         rmdoc_content = f.read()
 
     result = mock_rm.upload_file("Zotero/read/On computable numbers.pdf", rmdoc_content)
@@ -87,10 +85,7 @@ def test_multiple_pdfs_in_one_collection():
 
     # Create multiple PDF attachments
     pdf_files = ["paper1.pdf", "paper2.pdf", "paper3.pdf"]
-    with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
-        "rb",
-    ) as f:
+    with open(TEST_PDF, "rb") as f:
         pdf_content = f.read()
 
     for pdf_name in pdf_files:
@@ -122,10 +117,7 @@ def test_multiple_collections_sync_independently():
     items = ["Collection A", "Collection B", "Collection C"]
     item_handles = []
 
-    with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
-        "rb",
-    ) as f:
+    with open(TEST_PDF, "rb") as f:
         pdf_content = f.read()
 
     for collection_name in items:
@@ -162,10 +154,7 @@ def test_missing_unread_folder_warns_and_fails(caplog):
     item_handle = mock_zotero.create_item(["Test Paper"])
     mock_zotero.add_tags(item_handle, ["to_sync"])
 
-    with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
-        "rb",
-    ) as f:
+    with open(TEST_PDF, "rb") as f:
         pdf_content = f.read()
     mock_zotero.create_file(item_handle, "test.pdf", pdf_content)
 
@@ -222,10 +211,7 @@ def test_remarkable_api_unavailable_preserves_tags(caplog):
     item_handle = mock_zotero.create_item(["Test Paper"])
     mock_zotero.add_tags(item_handle, ["to_sync"])
 
-    with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
-        "rb",
-    ) as f:
+    with open(TEST_PDF, "rb") as f:
         pdf_content = f.read()
     mock_zotero.create_file(item_handle, "test.pdf", pdf_content)
 
@@ -267,10 +253,7 @@ def test_duplicate_file_overwrites(caplog):
     item_handle = mock_zotero.create_item(["Test Paper"])
     mock_zotero.add_tags(item_handle, ["to_sync"])
 
-    with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
-        "rb",
-    ) as f:
+    with open(TEST_PDF, "rb") as f:
         pdf_content = f.read()
     mock_zotero.create_file(item_handle, "duplicate_test.pdf", pdf_content)
 
@@ -330,10 +313,7 @@ def test_rmToZot_updates_existing_markdown_attachment():
     mock_zotero.add_tags(handle, ["synced"])
 
     # Create existing PDF attachment
-    with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
-        "rb",
-    ) as f:
+    with open(TEST_PDF, "rb") as f:
         pdf_content = f.read()
     mock_zotero.create_file(handle, "On computable numbers.pdf", pdf_content)
 
@@ -344,9 +324,7 @@ def test_rmToZot_updates_existing_markdown_attachment():
     )
 
     # Add annotated file to reMarkable's read folder
-    with open(
-        "tests/on computable numbers - RMPP - highlighter tool v6.rmn", "rb"
-    ) as f:
+    with open(VALID_RM_DOCUMENT, "rb") as f:
         rmdoc_content = f.read()
     mock_rm.upload_file("Zotero/read/On computable numbers.pdf", rmdoc_content)
 
@@ -379,17 +357,12 @@ def test_rmToZot_deletes_files_after_successful_sync():
     mock_zotero.add_tags(handle, ["synced"])
 
     # Create existing PDF attachment
-    with open(
-        "1936 On Computable Numbers, with an Application to the Entscheidungsproblem - A. M. Turing _remarks.pdf",
-        "rb",
-    ) as f:
+    with open(TEST_PDF, "rb") as f:
         pdf_content = f.read()
     mock_zotero.create_file(handle, "On computable numbers.pdf", pdf_content)
 
     # Add annotated file to reMarkable's read folder
-    with open(
-        "tests/on computable numbers - RMPP - highlighter tool v6.rmn", "rb"
-    ) as f:
+    with open(VALID_RM_DOCUMENT, "rb") as f:
         rmdoc_content = f.read()
     mock_rm.upload_file("Zotero/read/On computable numbers.pdf", rmdoc_content)
 
