@@ -95,6 +95,7 @@
 
                 treefmtEval.config.build.wrapper
 
+                pkgs.mypy
               ]
               ++ (with pkgs.python3Packages; [
                 types-pyyaml
