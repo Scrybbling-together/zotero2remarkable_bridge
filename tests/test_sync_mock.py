@@ -86,10 +86,7 @@ def test_multiple_pdfs_in_one_collection():
 
     # Create multiple PDF attachments
     pdf_files = ["paper1.pdf", "paper2.pdf", "paper3.pdf"]
-    with open(
-        TEST_PDF,
-        "rb",
-    ) as f:
+    with open(TEST_PDF, "rb") as f:
         pdf_content = f.read()
 
     for pdf_name in pdf_files:
@@ -121,10 +118,7 @@ def test_multiple_collections_sync_independently():
     items = ["Collection A", "Collection B", "Collection C"]
     item_handles = []
 
-    with open(
-        TEST_PDF,
-        "rb",
-    ) as f:
+    with open(TEST_PDF, "rb") as f:
         pdf_content = f.read()
 
     for collection_name in items:
@@ -161,10 +155,7 @@ def test_missing_unread_folder_warns_and_fails(caplog):
     item_handle = mock_zotero.create_item(["Test Paper"])
     mock_zotero.add_tags(item_handle, ["to_sync"])
 
-    with open(
-        TEST_PDF,
-        "rb",
-    ) as f:
+    with open(TEST_PDF, "rb") as f:
         pdf_content = f.read()
     mock_zotero.create_file(item_handle, "test.pdf", pdf_content)
 
